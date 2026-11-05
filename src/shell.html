@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08111F">
+<meta name="description" content="GRONKILLION: an NFL trivia game. Seven timed plays. Obvious answers get first downs; deep cuts score touchdowns.">
+<title>GRONKILLION — Think NFL. Go Deep. Score Big.</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-40 -40 80 80'%3E%3Cpath d='M-34 0C-26 -19 -9 -22 0 -22S26 -19 34 0C26 19 9 22 0 22S-26 19 -34 0Z' fill='%23A3FF12' transform='rotate(-30)'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Big+Shoulders+Display:wght@700;800;900&display=swap">
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<!-- Shared SVG symbols -->
+<svg class="svg-defs" aria-hidden="true" focusable="false">
+  <defs>
+    <radialGradient id="ballShade" cx="36%" cy="28%" r="80%">
+      <stop offset="0" stop-color="#C2713A"/>
+      <stop offset=".55" stop-color="#8A4519"/>
+      <stop offset="1" stop-color="#4A2006"/>
+    </radialGradient>
+    <symbol id="sym-ball" viewBox="-40 -26 80 52">
+      <path d="M-36 0C-28 -20 -10 -24 0 -24S28 -20 36 0C28 20 10 24 0 24S-28 20 -36 0Z" fill="url(#ballShade)" stroke="#2A1003" stroke-width="2"/>
+      <path d="M-23 -16.5C-26.5 -6 -26.5 6 -23 16.5M23 -16.5C26.5 -6 26.5 6 23 16.5" fill="none" stroke="#F7F9FC" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M-11 -2.5H11" stroke="#F7F9FC" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M-8 -6.5V1.5M-3 -6.5V1.5M2 -6.5V1.5M7 -6.5V1.5" stroke="#F7F9FC" stroke-width="2.2" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="bg-stadium" aria-hidden="true"><span class="bank bank-l"></span><span class="bank bank-r"></span><span class="crowd"></span></div>
+<div id="lights" class="lights" aria-hidden="true"></div>
+<canvas id="confetti" aria-hidden="true" hidden></canvas>
+<div id="srPolite" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<div id="srAssert" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+<header class="topbar" id="topbar">
+  <button type="button" class="brand" id="brandBtn" aria-label="GRONKILLION home">
+    <svg viewBox="-40 -26 80 52" aria-hidden="true"><use href="#sym-ball" x="-40" y="-26" width="80" height="52"/></svg>
+    <span class="brand-txt">GRONKILLION</span>
+  </button>
+  <div class="top-game" id="topGame" hidden>
+    <span class="play-pill"><span id="topPlay">Play 1 of 7</span></span>
+    <span class="top-mode" id="topMode">Daily Challenge</span>
+  </div>
+  <div class="top-right">
+    <p class="top-score" id="topScoreWrap" hidden><span class="num" id="topScore">0</span><span class="unit">PTS</span></p>
+    <button type="button" class="icon-btn" id="soundBtn" aria-pressed="false" aria-label="Sound effects">
+      <svg class="snd-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 9.5l5 5m0-5l-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <svg class="snd-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.6 6a8.6 8.6 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button type="button" class="icon-btn" id="helpBtn" aria-label="How to play">?</button>
+  </div>
+</header>
+
+<main id="app">
+  <!-- HOME -->
+  <section id="screen-home" class="screen screen-home" aria-labelledby="wordmark">
+    <div class="hero">
+      <div class="hero-beams" aria-hidden="true"><span class="beam beam-l"></span><span class="beam beam-r"></span></div>
+      <h1 class="wordmark" id="wordmark" aria-label="GRONKILLION">
+        <span class="wm-txt" aria-hidden="true">GR</span><svg class="wm-ball" viewBox="-40 -26 80 52" aria-hidden="true"><use href="#sym-ball" x="-40" y="-26" width="80" height="52"/></svg><span class="wm-txt" aria-hidden="true">NKILLION</span>
+      </h1>
+      <div class="chain" aria-hidden="true"></div>
+      <p class="tagline">Think NFL. Go Deep. Score Big.</p>
+      <p class="subtag">The obvious answers get first downs. The legends get touchdowns.</p>
+      <div class="resume" id="resumeBox" hidden></div>
+      <button type="button" class="btn btn-kickoff" id="kickoffBtn">
+        <span class="k-in"><span class="k-main">Kickoff</span><span class="k-sub" id="kickoffSub">Today's Daily Challenge</span></span>
+      </button>
+      <div class="mode-row">
+        <button type="button" class="btn btn-ghost" id="dailyBtn"><span>Daily Challenge</span></button>
+        <button type="button" class="btn btn-ghost" id="unlimitedBtn"><span>Unlimited Mode</span></button>
+        <button type="button" class="btn btn-ghost" id="howBtn"><span>How to Play</span></button>
+      </div>
+      <p class="daily-note" id="dailyNote"></p>
+    </div>
+    <div class="hero-field" aria-hidden="true">
+      <div class="turf"></div>
+      <svg class="hero-ball" viewBox="-40 -26 80 52"><use href="#sym-ball" x="-40" y="-26" width="80" height="52"/></svg>
+    </div>
+    <section class="board" aria-label="Your record">
+      <dl class="board-grid">
+        <div class="board-cell"><dt>Unlimited high score</dt><dd class="gold" id="statHigh">0</dd></div>
+        <div class="board-cell"><dt>Today's Daily</dt><dd id="statDaily"><span class="small">Not played</span></dd></div>
+        <div class="board-cell"><dt>Games played</dt><dd id="statGames">0</dd></div>
+        <div class="board-cell"><dt>Best rarity</dt><dd id="statTier"><span class="small">None yet</span></dd></div>
+      </dl>
+    </section>
+    <p class="storage-note" id="storageNote" hidden>Browser storage is turned off, so scores and settings won't be saved after you close this page.</p>
+  </section>
+
+  <!-- GAME -->
+  <section id="screen-game" class="screen screen-game" aria-labelledby="qPrompt" hidden>
+    <article class="qcard" id="qcard" data-phase="preview">
+      <div class="q-main">
+        <div class="qcard-head">
+          <div class="q-meta">
+            <span class="cat-chip"><span id="qCategory">Category</span></span>
+            <span class="q-count" id="qCount">Play 1 of 7</span>
+          </div>
+          <div class="timer" id="timer" role="timer" aria-label="Play clock" data-state="snap">
+            <svg viewBox="0 0 80 80" aria-hidden="true">
+              <circle class="t-track" cx="40" cy="40" r="34"/>
+              <circle class="t-prog" id="timerProg" cx="40" cy="40" r="34" stroke-dasharray="213.63" stroke-dashoffset="0"/>
+            </svg>
+            <span class="t-num" id="timerNum" aria-hidden="true">3</span>
+            <span class="t-label" id="timerLabel" aria-hidden="true">Snap</span>
+          </div>
+        </div>
+        <h2 class="q-prompt" id="qPrompt" tabindex="-1">Question</h2>
+        <p class="q-scope" id="qScope"></p>
+      </div>
+
+      <form class="answer-zone" id="answerForm" autocomplete="off" novalidate>
+        <label class="sr-only" for="answerInput">Your answer</label>
+        <div class="input-wrap" id="inputWrap">
+          <input id="answerInput" type="text" name="answer" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="go" maxlength="64" placeholder="Type your answer" aria-describedby="feedback qScope">
+          <span class="i-icon" aria-hidden="true">✓</span>
+        </div>
+        <button type="submit" class="btn btn-primary" id="submitBtn"><span>Submit Answer</span></button>
+        <div class="answer-meta">
+          <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+          <button type="button" class="btn-text" id="skipBtn">Skip play</button>
+        </div>
+      </form>
+
+      <section class="reveal" id="reveal" aria-labelledby="rvAnswer" hidden>
+        <div class="burst" aria-hidden="true"></div>
+        <p class="rv-status" id="rvStatus">Accepted</p>
+        <p class="rv-answer" id="rvAnswer" tabindex="-1">Answer</p>
+        <p class="rv-tier"><span class="tier-badge" id="rvTier" data-tier="chalk"><span class="glyph" aria-hidden="true">●</span><span class="t-name">Chalk Pick</span></span></p>
+        <p class="rv-points" id="rvPoints">+10 points</p>
+        <p class="rv-flavor" id="rvFlavor"></p>
+        <p class="rv-note" id="rvNote" hidden></p>
+        <div class="rv-more" id="rvMore" hidden></div>
+        <button type="button" class="btn btn-primary" id="nextBtn"><span>Next Play</span></button>
+      </section>
+    </article>
+
+    <div class="field-wrap" id="gameField">
+      <div class="field-head">
+        <p class="zone-label" data-role="zone" data-zone="opening">Opening Drive</p>
+        <p class="yard-pos"><span class="yard-marker" data-role="marker">Own goal line</span><span class="yard-gain" data-role="yards">0 yards</span></p>
+        <p class="field-score"><span data-role="score">0</span><span class="of">/700 PTS</span></p>
+      </div>
+      <div class="field" data-role="field" role="img" aria-label="Football field"></div>
+      <ol class="drive-chips" data-role="chips" aria-label="Drive summary"></ol>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="screen-results" class="screen screen-results" aria-labelledby="resRank" hidden>
+    <div class="res-hero" id="resHero">
+      <p class="res-mode" id="resMode">Unlimited Mode</p>
+      <p class="res-score"><span class="big" id="resScore">0</span><span class="of">/700</span></p>
+      <h2 class="res-rank" id="resRank" tabindex="-1">Rookie</h2>
+      <p class="res-msg" id="resMsg"></p>
+      <p class="res-badge" id="resBadge" hidden><span>New high score</span></p>
+    </div>
+    <div class="field-wrap" id="resField">
+      <div class="field-head">
+        <p class="zone-label" data-role="zone" data-zone="opening">Opening Drive</p>
+        <p class="yard-pos"><span class="yard-marker" data-role="marker">Own goal line</span><span class="yard-gain" data-role="yards">0 yards</span></p>
+        <p class="field-score"><span data-role="score">0</span><span class="of">/700 PTS</span></p>
+      </div>
+      <div class="field" data-role="field" role="img" aria-label="Final field position"></div>
+      <ol class="drive-chips" data-role="chips" aria-label="Drive summary"></ol>
+    </div>
+    <div class="res-best" id="resBest"></div>
+    <ol class="res-plays" id="resPlays" aria-label="Your seven plays"></ol>
+    <div class="res-actions">
+      <button type="button" class="btn btn-primary" id="replayBtn"><span>Play Again</span></button>
+      <button type="button" class="btn btn-gold" id="shareBtn"><span>Share Results</span></button>
+      <button type="button" class="btn btn-ghost" id="resHomeBtn"><span>Return Home</span></button>
+    </div>
+    <p class="res-next" id="resNext"></p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p>GRONKILLION is an independent football trivia game and is not affiliated with or endorsed by the NFL.</p>
+</footer>
+
+<!-- How to play -->
+<dialog id="howDialog" aria-labelledby="howTitle">
+  <div class="dlg">
+    <h2 id="howTitle">How to play</h2>
+    <p>Seven plays make one drive. Each play is an NFL prompt with lots of correct answers. Type one in, and dig deep: the less obvious your answer, the more yards you gain.</p>
+    <h3>The play clock</h3>
+    <ul>
+      <li>You get a 3-second snap count to read the prompt, then 25 seconds to answer.</li>
+      <li>A wrong or unrecognized answer doesn't end the play. Keep trying until the clock hits zero.</li>
+      <li>Your first accepted answer locks in the play.</li>
+    </ul>
+    <h3>Rarity scoring</h3>
+    <table class="tier-table" id="tierTable"><tbody></tbody></table>
+    <p style="margin-top:8px;color:var(--muted);font-size:.95rem">Rarity tiers are curated estimates of how likely an average fan is to think of each answer. They are not live player statistics.</p>
+    <h3>The field</h3>
+    <p>Every point moves the ball downfield. A perfect 700-point drive reaches the end zone for a touchdown.</p>
+    <h3>Typing tips</h3>
+    <ul>
+      <li>Capitalization, punctuation and suffixes like Jr. or III don't matter.</li>
+      <li>Last names work when only one well-known player has that name. Otherwise, add a first name.</li>
+      <li>Well-known nicknames work, and so do team nicknames, cities and abbreviations like KC or SF.</li>
+    </ul>
+    <h3>Modes</h3>
+    <ul>
+      <li><strong>Daily Challenge:</strong> the same seven plays for everyone each UTC day. One scored attempt per day.</li>
+      <li><strong>Unlimited Mode:</strong> play as many drives as you like.</li>
+    </ul>
+    <form method="dialog" class="dlg-actions"><button class="btn btn-primary" value="close"><span>Got it</span></button></form>
+  </div>
+</dialog>
+
+<!-- Confirm -->
+<dialog id="confirmDialog" aria-labelledby="confirmTitle">
+  <form method="dialog" class="dlg">
+    <h2 id="confirmTitle">Are you sure?</h2>
+    <p id="confirmText"></p>
+    <div class="dlg-actions">
+      <button class="btn btn-ghost" value="cancel" id="confirmCancel"><span>Cancel</span></button>
+      <button class="btn btn-primary" value="ok" id="confirmOk"><span>OK</span></button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Share fallback -->
+<dialog id="shareDialog" aria-labelledby="shareTitle">
+  <div class="dlg">
+    <h2 id="shareTitle">Share your drive</h2>
+    <p style="margin-bottom:10px">Copy this summary and paste it anywhere. It doesn't reveal any answers.</p>
+    <label class="sr-only" for="shareText">Results summary</label>
+    <textarea id="shareText" readonly></textarea>
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-gold" id="shareCopy"><span>Copy</span></button>
+      <form method="dialog"><button class="btn btn-ghost" value="close"><span>Close</span></button></form>
+    </div>
+  </div>
+</dialog>
+
+<div id="kickoffFx" class="kickoff-fx" aria-hidden="true" hidden>
+  <svg class="ko-ball" viewBox="-40 -26 80 52"><use href="#sym-ball" x="-40" y="-26" width="80" height="52"/></svg>
+  <p class="ko-word">Kickoff</p>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+/*__JS__*/
+</script>
+</body>
+</html>

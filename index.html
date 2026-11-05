@@ -1,0 +1,3704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08111F">
+<meta name="description" content="GRONKILLION: an NFL trivia game. Seven timed plays. Obvious answers get first downs; deep cuts score touchdowns.">
+<title>GRONKILLION — Think NFL. Go Deep. Score Big.</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-40 -40 80 80'%3E%3Cpath d='M-34 0C-26 -19 -9 -22 0 -22S26 -19 34 0C26 19 9 22 0 22S-26 19 -34 0Z' fill='%23A3FF12' transform='rotate(-30)'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Big+Shoulders+Display:wght@700;800;900&display=swap">
+<style>
+/* ==========================================================================
+   GRONKILLION — styles
+   Broadcast-graphics language: skewed slabs, scoreboard numerals, turf.
+   ========================================================================== */
+:root {
+  --navy: #08111F;
+  --stadium: #101C2D;
+  --panel: #13233A;
+  --panel-deep: #0C1828;
+  --line: #22385A;
+  --line-strong: #2E4A72;
+  --green: #A3FF12;
+  --green-deep: #5E9A00;
+  --gold: #FFC857;
+  --gold-deep: #B9861C;
+  --white: #F7F9FC;
+  --muted: #A7B6CC;
+  --dim: #7F92AE;
+  --red: #FF4D57;
+  --red-soft: #FF8A90;
+  --purple: #B47CFF;
+  --blue: #4DA3FF;
+  --orange: #FF9F43;
+  --chalk: #D9E2EE;
+  --turf-a: #1E6F37;
+  --turf-b: #237A3E;
+  --font-display: "Big Shoulders Display", "Arial Narrow", Impact, "Haettenschweiler", sans-serif;
+  --font-body: "Barlow", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --gutter: clamp(16px, 3vw, 28px);
+}
+
+/* Tier colours: every badge also carries a text label and a glyph */
+[data-tier="chalk"]         { --tier: var(--chalk); }
+[data-tier="starter"]       { --tier: var(--blue); }
+[data-tier="pro_bowler"]    { --tier: var(--green); }
+[data-tier="all_pro"]       { --tier: var(--orange); }
+[data-tier="hall_of_famer"] { --tier: var(--purple); }
+[data-tier="gronkillion"]   { --tier: var(--gold); }
+[data-tier="miss"]          { --tier: var(--red); }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; background: var(--navy); }
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--navy);
+  color: var(--white);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+p { margin: 0; }
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+:focus { outline: none; }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ---------- Stadium backdrop ---------- */
+.bg-stadium {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden;
+  background:
+    radial-gradient(1100px 480px at 50% -160px, rgba(255, 200, 87, .14), transparent 70%),
+    radial-gradient(620px 360px at 6% -80px, rgba(247, 249, 252, .10), transparent 70%),
+    radial-gradient(620px 360px at 94% -80px, rgba(247, 249, 252, .10), transparent 70%),
+    linear-gradient(180deg, #0B1729 0%, var(--navy) 52%, #060D18 100%);
+}
+.bg-stadium .bank {
+  position: absolute; top: 18px; width: 120px; height: 34px;
+  background-image: radial-gradient(circle, rgba(255, 246, 221, .95) 0 2.6px, rgba(255, 220, 140, .35) 3.4px, transparent 4.5px);
+  background-size: 12px 11px;
+  filter: drop-shadow(0 0 10px rgba(255, 226, 154, .55));
+  opacity: .8;
+}
+.bg-stadium .bank-l { left: 4%; transform: skewX(-8deg); }
+.bg-stadium .bank-r { right: 4%; transform: skewX(8deg); }
+.bg-stadium .crowd {
+  position: absolute; left: 0; right: 0; top: 110px; height: 150px;
+  background-image: radial-gradient(circle at 50% 45%, rgba(167, 182, 204, .16) 0 2.2px, transparent 2.8px);
+  background-size: 9px 10px;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 30%, #000 60%, transparent);
+          mask-image: linear-gradient(180deg, transparent, #000 30%, #000 60%, transparent);
+}
+
+/* ---------- Stadium light flash + confetti ---------- */
+.lights {
+  position: fixed; inset: 0; z-index: 30; pointer-events: none; opacity: 0;
+  background:
+    radial-gradient(60% 55% at 0% 0%, rgba(255, 248, 225, .55), transparent 65%),
+    radial-gradient(60% 55% at 100% 0%, rgba(255, 248, 225, .55), transparent 65%),
+    radial-gradient(70% 40% at 50% 0%, rgba(255, 200, 87, .25), transparent 70%);
+  mix-blend-mode: screen;
+}
+.lights.flash { animation: lightsFlash 1.7s ease-out; }
+@keyframes lightsFlash {
+  0% { opacity: 0; } 8% { opacity: 1; } 20% { opacity: .25; } 32% { opacity: .95; } 55% { opacity: .5; } 100% { opacity: 0; }
+}
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 40; pointer-events: none; }
+
+/* ---------- Top bar ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px var(--gutter);
+  padding-top: max(10px, env(safe-area-inset-top));
+  background: linear-gradient(180deg, rgba(8, 17, 31, .97), rgba(8, 17, 31, .88));
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border-bottom: 1px solid #1A2A43;
+}
+.brand {
+  display: inline-flex; align-items: center; gap: 8px; padding: 4px 6px; border: 0; background: none;
+  font-family: var(--font-display); font-weight: 900; font-size: 1.45rem; letter-spacing: .02em; line-height: 1;
+  color: var(--white); transform: skewX(-9deg);
+}
+.brand svg { width: 30px; height: 20px; transform: rotate(-18deg); }
+.top-game { flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px; min-width: 0; }
+.top-mode {
+  font-family: var(--font-display); font-weight: 800; font-size: .95rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted);
+}
+.play-pill {
+  font-family: var(--font-display); font-weight: 900; font-size: 1.05rem; letter-spacing: .07em; text-transform: uppercase;
+  background: var(--green); color: var(--navy); padding: 3px 12px; transform: skewX(-10deg); white-space: nowrap;
+}
+.play-pill > span { display: inline-block; transform: skewX(10deg); }
+.top-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.top-score {
+  display: flex; align-items: baseline; gap: 4px; margin-right: 4px;
+  font-family: var(--font-display); font-weight: 900; color: var(--gold); line-height: 1;
+}
+.top-score .num { font-size: 1.7rem; min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; }
+.top-score .unit { font-size: .85rem; letter-spacing: .1em; color: var(--muted); }
+.icon-btn {
+  width: 44px; height: 44px; display: grid; place-items: center; flex: none;
+  background: rgba(16, 28, 45, .85); border: 0; border-radius: 4px; box-shadow: inset 0 0 0 2px #2A3F5E;
+  font-family: var(--font-display); font-weight: 900; font-size: 1.3rem;
+}
+.icon-btn:hover { box-shadow: inset 0 0 0 2px var(--line-strong); }
+.icon-btn svg { width: 22px; height: 22px; }
+.icon-btn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--green); color: var(--green); }
+.icon-btn .snd-on { display: none; }
+.icon-btn[aria-pressed="true"] .snd-on { display: block; }
+.icon-btn[aria-pressed="true"] .snd-off { display: none; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5em;
+  min-height: 50px; padding: .65em 1.4em;
+  border: 0; border-radius: 3px;
+  font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; letter-spacing: .06em; text-transform: uppercase; line-height: 1.1;
+  transform: skewX(-10deg);
+  transition: background-color .15s, color .15s, box-shadow .15s, transform .08s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn > span { display: inline-block; transform: skewX(10deg); }
+.btn-primary { background: var(--green); color: var(--navy); box-shadow: 0 5px 0 var(--green-deep), 0 14px 26px -12px rgba(163, 255, 18, .55); }
+.btn-primary:hover { background: #B8FF4A; }
+.btn-primary:active { transform: skewX(-10deg) translateY(3px); box-shadow: 0 2px 0 var(--green-deep); }
+.btn-gold { background: var(--gold); color: var(--navy); box-shadow: 0 5px 0 var(--gold-deep); }
+.btn-gold:hover { background: #FFD47A; }
+.btn-gold:active { transform: skewX(-10deg) translateY(3px); box-shadow: 0 2px 0 var(--gold-deep); }
+.btn-ghost { background: rgba(16, 28, 45, .78); color: var(--white); box-shadow: inset 0 0 0 2px #2C4262; }
+.btn-ghost:hover { box-shadow: inset 0 0 0 2px var(--green); }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+.btn-text {
+  border: 0; background: none; padding: 8px 4px; min-height: 44px;
+  font-family: var(--font-display); font-weight: 800; font-size: 1rem; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); text-decoration: underline; text-decoration-color: rgba(167, 182, 204, .4); text-underline-offset: 4px;
+}
+.btn-text:hover { color: var(--white); }
+.btn-text.armed { color: var(--red-soft); text-decoration-color: var(--red-soft); }
+.btn-text:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ---------- Layout ---------- */
+main { flex: 1; width: 100%; }
+.screen { width: min(1120px, 100%); margin: 0 auto; padding: 18px var(--gutter) 28px; }
+
+/* ---------- Home ---------- */
+.screen-home { padding-top: 6px; }
+.hero { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: clamp(14px, 4vh, 44px); }
+.hero-beams { position: absolute; inset: -40px 0 auto; height: 420px; pointer-events: none; overflow: hidden; }
+.beam {
+  position: absolute; top: -40px; width: 34%; height: 520px;
+  background: linear-gradient(180deg, rgba(255, 244, 214, .11), rgba(255, 244, 214, 0) 75%);
+  -webkit-clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%); clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0; filter: blur(2px);
+}
+.beam-l { left: 2%; transform: rotate(-28deg); animation: sweepL 11s ease-in-out infinite alternate; }
+.beam-r { right: 2%; transform: rotate(28deg); animation: sweepR 13s ease-in-out infinite alternate; }
+@keyframes sweepL { from { transform: rotate(-32deg); } to { transform: rotate(-20deg); } }
+@keyframes sweepR { from { transform: rotate(32deg); } to { transform: rotate(21deg); } }
+
+.wordmark {
+  position: relative; margin: 0; display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-weight: 900; text-transform: uppercase;
+  font-size: clamp(3.1rem, 13.2vw, 9rem); line-height: .82; letter-spacing: .005em;
+  transform: skewX(-9deg);
+  filter: drop-shadow(0 5px 0 rgba(5, 10, 19, .95)) drop-shadow(0 18px 28px rgba(0, 0, 0, .55));
+}
+.wm-txt {
+  background: linear-gradient(180deg, #FFF8E4 0%, #FFE6A6 36%, var(--gold) 60%, #E09A1D 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 246, 220, .25);
+}
+.wm-ball { width: .98em; height: .66em; margin: 0 .02em; transform: rotate(-24deg) translateY(.02em); flex: none; }
+.chain {
+  width: min(560px, 82%); height: 12px; margin: 16px auto 0; transform: skewX(-9deg);
+  background:
+    repeating-linear-gradient(90deg, rgba(8, 17, 31, .9) 0 2px, transparent 2px 10%),
+    linear-gradient(90deg, transparent, var(--green) 12%, var(--green) 88%, transparent);
+  box-shadow: 0 0 22px rgba(163, 255, 18, .35);
+}
+.tagline {
+  margin-top: 18px; font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(1.45rem, 3.6vw, 2.15rem); letter-spacing: .02em; line-height: 1.1;
+}
+.subtag { margin-top: 8px; max-width: 46ch; color: var(--muted); font-size: clamp(1rem, 2.2vw, 1.12rem); font-weight: 500; }
+
+.btn-kickoff {
+  margin-top: clamp(22px, 4vh, 34px); padding: .5em 2.1em .55em; min-height: 76px;
+  background: var(--green); color: var(--navy);
+  box-shadow: 0 7px 0 var(--green-deep), 0 0 0 6px rgba(163, 255, 18, .14), 0 24px 44px -16px rgba(163, 255, 18, .6);
+}
+.btn-kickoff:hover { background: #B8FF4A; }
+.btn-kickoff:active { transform: skewX(-10deg) translateY(4px); box-shadow: 0 3px 0 var(--green-deep); }
+.k-in { display: flex !important; flex-direction: column; align-items: center; gap: 2px; }
+.k-main { font-size: clamp(2.1rem, 6vw, 2.9rem); font-weight: 900; letter-spacing: .08em; line-height: 1; }
+.k-sub { font-family: var(--font-body); font-weight: 700; font-size: .92rem; letter-spacing: .02em; text-transform: none; opacity: .82; }
+.mode-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 14px; margin-top: 26px; }
+.mode-row .btn { min-width: 190px; }
+.daily-note { margin-top: 16px; color: var(--muted); font-size: .98rem; font-variant-numeric: tabular-nums; min-height: 1.5em; }
+.daily-note strong { color: var(--white); font-weight: 700; }
+
+.resume {
+  margin-top: 22px; width: min(560px, 100%); display: grid; gap: 10px;
+  background: rgba(16, 28, 45, .9); border: 1px solid var(--line-strong); border-left: 4px solid var(--gold);
+  padding: 14px 16px; text-align: left;
+}
+.resume-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.resume-row p { flex: 1 1 220px; font-weight: 600; }
+.resume-row p span { display: block; color: var(--muted); font-weight: 500; font-size: .92rem; }
+.resume-row .btn { min-height: 44px; font-size: 1rem; padding: .5em 1em; }
+
+.hero-field { position: relative; height: clamp(100px, 14vw, 170px); margin-top: 12px; perspective: 520px; overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 40%, #000 80%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 40%, #000 80%, transparent 100%);
+}
+.hero-field .turf {
+  position: absolute; left: -40%; right: -40%; top: 0; height: 260%;
+  transform: rotateX(64deg); transform-origin: 50% 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(247, 249, 252, .6) 0 3px, transparent 3px 8.333%),
+    repeating-linear-gradient(90deg, var(--turf-a) 0 4.1666%, var(--turf-b) 4.1666% 8.333%);
+}
+.hero-ball { position: absolute; left: 50%; top: 38%; width: 92px; height: 60px; margin-left: -46px;
+  filter: drop-shadow(0 16px 10px rgba(0, 0, 0, .45)); animation: floatBall 4.2s ease-in-out infinite; }
+@keyframes floatBall {
+  0%, 100% { transform: translateY(0) rotate(-16deg); }
+  50% { transform: translateY(-14px) rotate(-8deg); }
+}
+
+.board { margin-top: 6px; }
+.board-grid {
+  margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: linear-gradient(180deg, #111F34, #0C1728); border: 1px solid var(--line); border-top: 3px solid var(--gold);
+}
+.board-cell { padding: 14px 16px 16px; border-left: 1px solid var(--line); min-width: 0; }
+.board-cell:first-child { border-left: 0; }
+.board-cell dt { color: var(--muted); font-size: .9rem; font-weight: 600; }
+.board-cell dd { margin: 4px 0 0; font-family: var(--font-display); font-weight: 900; font-size: 2rem; line-height: 1; color: var(--white); overflow-wrap: anywhere; }
+.board-cell dd.gold { color: var(--gold); }
+.board-cell dd .small { font-size: 1.05rem; color: var(--muted); font-weight: 800; letter-spacing: .04em; }
+.board-cell dd .mini-tier { display: inline-block; font-size: 1.15rem; letter-spacing: .05em; text-transform: uppercase; color: var(--tier); }
+.storage-note { margin-top: 12px; text-align: center; color: var(--gold); font-size: .95rem; }
+
+/* ---------- Game screen ---------- */
+.screen-game { display: grid; gap: 18px; padding-top: 16px; }
+.qcard {
+  position: relative; overflow: hidden; padding: clamp(18px, 3vw, 30px);
+  background: linear-gradient(180deg, #15273F 0%, #0F1D31 100%);
+  border: 1px solid #243C5D;
+  -webkit-clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px));
+          clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px));
+}
+.qcard::before { content: ""; position: absolute; left: 0; top: 0; width: 34%; height: 4px; background: var(--green); }
+.qcard::after { content: ""; position: absolute; left: 34%; top: 0; width: 12%; height: 4px; background: var(--gold); }
+.qcard.enter .q-main { animation: cardIn .45s var(--ease-out) both; }
+@keyframes cardIn { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: none; } }
+.qcard-head { display: flex; align-items: flex-start; gap: 14px; }
+.q-meta { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cat-chip {
+  align-self: flex-start; font-family: var(--font-display); font-weight: 900; font-size: 1rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--navy); background: var(--gold); padding: 3px 12px; transform: skewX(-10deg);
+}
+.cat-chip > span { display: inline-block; transform: skewX(10deg); }
+.q-count { font-family: var(--font-display); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-size: .95rem; }
+.q-prompt {
+  margin: 14px 0 8px; max-width: 32ch;
+  font-family: var(--font-body); font-weight: 700; font-size: clamp(1.6rem, 4.3vw, 2.65rem); line-height: 1.12; letter-spacing: -.01em;
+}
+.q-prompt:focus-visible { outline-offset: 6px; }
+.q-scope { color: var(--muted); font-size: 1rem; max-width: 70ch; }
+
+/* Timer */
+.timer { position: relative; width: 84px; height: 84px; flex: none; margin-left: auto; }
+.timer svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+.t-track { fill: rgba(8, 17, 31, .65); stroke: #1E3150; stroke-width: 7; }
+.t-prog { fill: none; stroke: var(--green); stroke-width: 7; transition: stroke .25s; }
+.timer[data-state="snap"] .t-prog { stroke: var(--blue); }
+.timer[data-state="warn"] .t-prog { stroke: var(--gold); }
+.timer[data-state="danger"] .t-prog { stroke: var(--red); }
+.timer[data-state="danger"] .t-num { color: var(--red-soft); }
+.timer[data-state="danger"] { animation: timerPulse 1s ease-in-out infinite; }
+.timer[data-state="off"] .t-prog { stroke: #2A3F5E; }
+@keyframes timerPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+.qcard[data-phase="reveal"] .timer { opacity: .45; animation: none; }
+.t-num {
+  position: absolute; inset: 0; display: grid; place-items: center; padding-bottom: 10px;
+  font-family: var(--font-display); font-weight: 900; font-size: 2.1rem; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.t-label {
+  position: absolute; left: 0; right: 0; bottom: 17px; text-align: center;
+  font-family: var(--font-display); font-weight: 800; font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+}
+
+/* Answer zone */
+.answer-zone { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 14px; margin-top: 20px; align-items: stretch; }
+.input-wrap { position: relative; }
+#answerInput {
+  width: 100%; height: 62px; padding: 0 50px 0 18px;
+  font-size: 1.35rem; font-weight: 600;
+  background: #07101D; color: var(--white);
+  border: 2px solid #2C4466; border-radius: 4px; caret-color: var(--green);
+  transition: border-color .15s, box-shadow .15s, opacity .15s;
+}
+#answerInput::placeholder { color: #71839E; font-weight: 500; }
+#answerInput:focus { border-color: var(--green); box-shadow: 0 0 0 4px rgba(163, 255, 18, .2); }
+#answerInput:focus-visible { outline: none; }
+#answerInput[aria-disabled="true"] { opacity: .62; border-style: dashed; }
+.input-wrap .i-icon { position: absolute; right: 14px; top: 50%; width: 26px; height: 26px; margin-top: -13px; display: grid; place-items: center; font-weight: 900; border-radius: 50%; opacity: 0; transform: scale(.4); }
+.input-wrap.ok #answerInput { border-color: var(--green); box-shadow: 0 0 0 6px rgba(163, 255, 18, .3); }
+.input-wrap.ok .i-icon { opacity: 1; transform: scale(1); background: var(--green); color: var(--navy); transition: transform .3s var(--ease-out), opacity .2s; }
+.input-wrap.bad #answerInput { border-color: var(--red); }
+.input-wrap.shake { animation: shake .42s cubic-bezier(.36, .07, .19, .97); }
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); } 20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-8px); } 40%, 60% { transform: translateX(8px); }
+}
+#submitBtn { min-width: 210px; min-height: 62px; font-size: 1.25rem; }
+.answer-meta { grid-column: 1 / -1; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; min-height: 48px; }
+.feedback { flex: 1; font-weight: 600; font-size: 1.05rem; padding-top: 10px; }
+.feedback:empty { padding-top: 0; }
+.feedback::before { display: inline-block; width: 1.4em; font-weight: 900; }
+.feedback.is-error { color: var(--red-soft); }
+.feedback.is-error::before { content: "✕"; }
+.feedback.is-info { color: var(--gold); }
+.feedback.is-info::before { content: "?"; }
+.feedback.is-ok { color: var(--green); }
+.feedback.is-ok::before { content: "✓"; }
+.feedback .fb-note { display: block; margin-top: 2px; color: var(--muted); font-weight: 500; font-size: .95rem; padding-left: 1.4em; }
+
+/* Reveal */
+.reveal { position: relative; margin-top: 18px; padding: clamp(18px, 3vw, 26px) 0 4px; text-align: center; border-top: 1px solid var(--line); isolation: isolate; }
+.burst {
+  position: absolute; left: 50%; top: 44%; width: 820px; height: 820px; margin: -410px 0 0 -410px; z-index: -1; pointer-events: none; opacity: 0;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 200, 87, .42) 0deg 7deg, transparent 7deg 18deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, .65) 30%, transparent 62%);
+          mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, .65) 30%, transparent 62%);
+}
+.reveal[data-tier="gronkillion"] .burst { animation: burst 2.4s var(--ease-out) forwards; }
+@keyframes burst {
+  0% { opacity: 0; transform: scale(.2) rotate(0deg); }
+  18% { opacity: 1; }
+  100% { opacity: .55; transform: scale(1) rotate(50deg); }
+}
+.rv-status {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-display); font-weight: 900; font-size: 1.05rem; letter-spacing: .14em; text-transform: uppercase;
+}
+.rv-status::before { content: "✓"; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--green); color: var(--navy); font-size: .9rem; letter-spacing: 0; }
+.reveal.is-miss .rv-status { color: var(--red-soft); }
+.reveal.is-miss .rv-status::before { content: "✕"; background: var(--red); color: var(--white); }
+.reveal:not(.is-miss) .rv-status { color: var(--green); }
+.rv-answer {
+  margin-top: 8px; font-family: var(--font-display); font-weight: 900; text-transform: uppercase;
+  font-size: clamp(2.2rem, 7vw, 4.2rem); line-height: .95; letter-spacing: .01em; overflow-wrap: anywhere;
+}
+.reveal.is-miss .rv-answer { color: var(--muted); }
+.rv-tier { margin-top: 14px; }
+.tier-badge {
+  display: inline-flex; align-items: center; gap: .55em; padding: .32em 1em;
+  font-family: var(--font-display); font-weight: 900; text-transform: uppercase; letter-spacing: .09em;
+  font-size: clamp(1.25rem, 3.6vw, 1.75rem); line-height: 1.05;
+  color: var(--navy); background: var(--tier, var(--chalk)); transform: skewX(-10deg);
+}
+.tier-badge > span { display: inline-block; transform: skewX(10deg); }
+.tier-badge .glyph { font-family: system-ui, sans-serif; font-size: .8em; }
+.tier-badge[data-tier="miss"] { color: var(--white); }
+.tier-badge[data-tier="gronkillion"] {
+  background: linear-gradient(100deg, #E8A21F 0%, #FFC857 30%, #FFF4CF 45%, #FFC857 60%, #E8A21F 100%);
+  background-size: 250% 100%; animation: shimmer 2.2s linear infinite;
+}
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+.rv-points {
+  margin-top: 12px; font-family: var(--font-display); font-weight: 900; color: var(--gold);
+  font-size: clamp(2.2rem, 6.4vw, 3.4rem); line-height: 1; font-variant-numeric: tabular-nums; text-transform: uppercase;
+}
+.reveal.is-miss .rv-points { color: var(--dim); }
+.rv-points.pop { animation: pop .5s var(--ease-out); }
+@keyframes pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+.rv-flavor { margin-top: 8px; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.15rem, 3vw, 1.5rem); letter-spacing: .05em; text-transform: uppercase; }
+.reveal[data-tier="hall_of_famer"] .rv-flavor, .reveal[data-tier="gronkillion"] .rv-flavor { color: var(--tier); }
+.rv-note { margin: 8px auto 0; max-width: 60ch; color: var(--muted); }
+.rv-more { margin: 16px auto 0; max-width: 680px; text-align: left; background: rgba(8, 17, 31, .55); border: 1px solid var(--line); padding: 12px 14px; }
+.rv-more h3 { margin: 0 0 8px; font-size: .98rem; font-weight: 700; color: var(--muted); }
+.rv-more ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.rv-more li { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px; background: #0E1B2E; border: 1px solid var(--line); border-left: 4px solid var(--tier); font-weight: 600; }
+.rv-more li small { color: var(--tier); font-family: var(--font-display); font-weight: 800; letter-spacing: .05em; text-transform: uppercase; font-size: .85rem; }
+#nextBtn { margin-top: 22px; min-width: 240px; min-height: 58px; font-size: 1.3rem; }
+
+/* ---------- Field ---------- */
+.field-wrap { display: grid; gap: 10px; }
+.field-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 14px; }
+.zone-label { font-family: var(--font-display); font-weight: 900; font-size: 1.5rem; letter-spacing: .05em; text-transform: uppercase; line-height: 1; }
+.zone-label[data-zone="midfield"] { color: var(--green); }
+.zone-label[data-zone="redzone"], .zone-label[data-zone="goalline"] { color: #FF7C82; }
+.zone-label[data-zone="td"] { color: var(--gold); }
+.yard-pos { display: flex; align-items: baseline; gap: 10px; font-family: var(--font-display); font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.yard-marker { background: #1B2C46; padding: 2px 10px; color: var(--white); font-size: 1.05rem; }
+.yard-gain { color: var(--muted); font-size: 1rem; }
+.field-score { margin-left: auto; font-family: var(--font-display); font-weight: 900; color: var(--gold); font-size: 1.5rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.field-score .of { color: var(--muted); font-size: 1rem; font-weight: 800; letter-spacing: .06em; margin-left: 2px; }
+.field { position: relative; width: min(100%, calc(34vh * 4.44)); margin: 0 auto; border-radius: 3px; overflow: hidden;
+  box-shadow: 0 0 0 2px #0A1E11, 0 22px 40px -22px rgba(0, 0, 0, .85); background: var(--turf-a); }
+.field svg { display: block; width: 100%; height: auto; }
+.yd-num { font-family: var(--font-display); font-weight: 800; font-size: 46px; fill: rgba(247, 249, 252, .88); }
+.ez-text { font-family: var(--font-display); font-weight: 900; font-size: 46px; letter-spacing: 6px; text-anchor: middle; dominant-baseline: central; }
+.ez-l { fill: rgba(247, 249, 252, .82); }
+.ez-r { fill: #FFE3A3; }
+.ball-g { transition: transform 1.3s var(--ease-out); }
+.ball-g.no-anim { transition: none; }
+.los { stroke: var(--blue); stroke-width: 5; }
+.ball-ring { fill: none; stroke: var(--green); stroke-width: 3; opacity: 0; }
+.field[data-live="1"] .ball-ring { animation: ring 1.6s ease-out infinite; }
+@keyframes ring { 0% { opacity: .9; transform: scale(.8); } 100% { opacity: 0; transform: scale(1.6); } }
+.ball-ring { transform-box: fill-box; transform-origin: center; }
+.gline line { stroke: var(--gold); stroke-width: 4; stroke-dasharray: 14 10; }
+.gline text { font-family: var(--font-display); font-weight: 900; font-size: 20px; letter-spacing: 3px; fill: var(--gold); text-anchor: middle; }
+.gline { transition: opacity .3s, transform 1.3s var(--ease-out); }
+.drive-arrow { fill: var(--tier); stroke: rgba(5, 12, 22, .55); stroke-width: 2; }
+.drive-label { font-family: var(--font-display); font-weight: 900; font-size: 20px; fill: var(--tier); paint-order: stroke; stroke: rgba(5, 12, 22, .8); stroke-width: 4px; }
+.drive-miss path { stroke: var(--red); stroke-width: 4; stroke-linecap: round; }
+.drive-play.is-new .drive-arrow { transform-box: fill-box; transform-origin: 0 50%; animation: driveGrow 1.3s var(--ease-out) both; }
+.drive-play.is-new .drive-label, .drive-miss.is-new { animation: fadeIn .4s 1s both; }
+@keyframes driveGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.drive-chips { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.chip {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 54px; padding: 6px 2px;
+  background: #0E1B2E; border: 1px solid #213552; border-bottom: 3px solid var(--tier, #213552);
+  font-family: var(--font-display); font-weight: 900; line-height: 1.05; text-align: center;
+}
+.chip .c-num { font-size: .74rem; letter-spacing: .12em; color: var(--muted); }
+.chip .c-val { font-size: 1.12rem; color: var(--tier, var(--dim)); font-variant-numeric: tabular-nums; }
+.chip[data-state="future"] { opacity: .5; }
+.chip[data-state="current"] { border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
+.chip[data-state="current"] .c-val { color: var(--green); }
+
+/* ---------- Results ---------- */
+.screen-results { display: grid; gap: 18px; padding-top: 18px; }
+.res-hero {
+  position: relative; text-align: center; padding: clamp(20px, 4vw, 36px) var(--gutter);
+  background: linear-gradient(180deg, #15273F 0%, #0E1B2E 100%); border: 1px solid #243C5D; border-top: 4px solid var(--gold);
+}
+.res-mode { color: var(--muted); font-weight: 600; }
+.res-score { margin-top: 8px; font-family: var(--font-display); font-weight: 900; line-height: .9; font-variant-numeric: tabular-nums; }
+.res-score .big { font-size: clamp(4rem, 15vw, 7.2rem); color: var(--gold); }
+.res-score .of { font-size: clamp(1.6rem, 5vw, 2.4rem); color: var(--muted); margin-left: 4px; }
+.res-rank { margin: 10px 0 0; font-family: var(--font-display); font-weight: 900; text-transform: uppercase; font-size: clamp(2rem, 7vw, 3.6rem); line-height: .95; letter-spacing: .03em; }
+.res-rank:focus-visible { outline-offset: 6px; }
+.res-hero[data-rank="legend"] .res-rank { color: var(--gold); }
+.res-hero[data-rank="hof"] .res-rank { color: var(--purple); }
+.res-hero[data-rank="allpro"] .res-rank { color: var(--orange); }
+.res-msg { margin-top: 8px; font-size: clamp(1.05rem, 2.6vw, 1.25rem); font-weight: 600; }
+.res-badge {
+  display: inline-block; margin-top: 14px; padding: 4px 14px; transform: skewX(-10deg);
+  font-family: var(--font-display); font-weight: 900; letter-spacing: .1em; text-transform: uppercase;
+  background: var(--green); color: var(--navy);
+}
+.res-badge > span { display: inline-block; transform: skewX(10deg); }
+.res-best { background: rgba(16, 28, 45, .9); border: 1px solid var(--line); border-left: 4px solid var(--tier, var(--gold)); padding: 14px 16px; }
+.res-best h3 { margin: 0 0 4px; font-size: .95rem; font-weight: 700; color: var(--muted); }
+.res-best p { font-family: var(--font-display); font-weight: 900; font-size: 1.6rem; line-height: 1.1; text-transform: uppercase; }
+.res-best p small { color: var(--tier); font-size: 1.05rem; letter-spacing: .05em; margin-left: 8px; }
+.res-plays { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.res-play {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 14px; align-items: center;
+  background: #0F1D31; border: 1px solid #213552; border-left: 4px solid var(--tier, #213552); padding: 12px 14px;
+}
+.rp-num { font-family: var(--font-display); font-weight: 900; font-size: 1.5rem; color: var(--muted); grid-column: 1; grid-row: 1 / 3; }
+.rp-q { font-weight: 600; line-height: 1.3; grid-column: 2; grid-row: 1; }
+.rp-cat { display: block; font-family: var(--font-display); font-weight: 800; font-size: .82rem; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.rp-a { color: var(--muted); font-size: .98rem; grid-column: 2; grid-row: 2; }
+.rp-a b { color: var(--white); }
+.rp-a .rp-tier { color: var(--tier); font-family: var(--font-display); font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.rp-pts { grid-column: 3; grid-row: 1 / 3; font-family: var(--font-display); font-weight: 900; font-size: 1.6rem; color: var(--tier, var(--dim)); text-align: right; font-variant-numeric: tabular-nums; }
+.res-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+.res-actions .btn { min-width: 200px; }
+.res-next { text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---------- Kickoff overlay ---------- */
+.kickoff-fx { position: fixed; inset: 0; z-index: 35; display: grid; place-items: center; overflow: hidden; pointer-events: none;
+  background: radial-gradient(circle at 50% 60%, rgba(16, 28, 45, .55), rgba(5, 10, 19, .92)); }
+.ko-ball { position: absolute; left: 50%; top: 50%; width: 160px; height: 104px; margin: -52px 0 0 -80px; opacity: 0; }
+.ko-word { position: relative; font-family: var(--font-display); font-weight: 900; text-transform: uppercase; letter-spacing: .06em;
+  font-size: clamp(3.6rem, 16vw, 10rem); color: var(--green); transform: skewX(-9deg); opacity: 0; text-shadow: 0 8px 0 rgba(0, 0, 0, .6); }
+.kickoff-fx.run .ko-ball { animation: koFly 1.15s cubic-bezier(.3, .55, .35, 1) forwards; }
+.kickoff-fx.run .ko-word { animation: koWord 1.15s ease-out forwards; }
+@keyframes koFly {
+  0% { opacity: 1; transform: translate(-48vw, 42vh) rotate(-40deg) scale(.5); }
+  55% { opacity: 1; transform: translate(-6vw, -22vh) rotate(380deg) scale(1.05); }
+  100% { opacity: 0; transform: translate(14vw, -4vh) rotate(760deg) scale(1.9); }
+}
+@keyframes koWord {
+  0%, 35% { opacity: 0; transform: skewX(-9deg) scale(1.5); }
+  55% { opacity: 1; transform: skewX(-9deg) scale(1); }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: skewX(-9deg) scale(.96); }
+}
+
+/* ---------- Dialogs, toast, footer ---------- */
+dialog { border: 0; padding: 0; background: transparent; color: var(--white); width: min(640px, calc(100vw - 32px)); max-width: none; }
+dialog::backdrop { background: rgba(4, 8, 15, .78); }
+.dlg { background: var(--stadium); border: 1px solid #27405F; border-top: 4px solid var(--green); padding: 22px clamp(18px, 4vw, 28px); max-height: min(84vh, 760px); overflow: auto; }
+.dlg h2 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 900; font-size: 2rem; text-transform: uppercase; letter-spacing: .03em; line-height: 1; }
+.dlg h3 { margin: 18px 0 6px; font-size: 1.05rem; }
+.dlg p, .dlg li { color: #D6DEEA; }
+.dlg ul { padding-left: 1.2em; margin: 6px 0; }
+.dlg li { margin: 4px 0; }
+.dlg-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+.dlg-actions .btn { min-height: 46px; font-size: 1rem; }
+.tier-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.tier-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.tier-table td:first-child { width: 2.6em; text-align: center; color: var(--tier); font-weight: 900; }
+.tier-table .tt-name { font-family: var(--font-display); font-weight: 900; letter-spacing: .05em; text-transform: uppercase; color: var(--tier); font-size: 1.1rem; }
+.tier-table .tt-pts { text-align: right; font-family: var(--font-display); font-weight: 900; font-size: 1.15rem; white-space: nowrap; }
+.tier-table .tt-desc { color: var(--muted); font-size: .95rem; }
+#shareText { width: 100%; min-height: 220px; resize: vertical; background: #07101D; border: 2px solid #2C4466; border-radius: 4px; padding: 12px; font-size: 1rem; line-height: 1.45; }
+.toast {
+  position: fixed; left: 50%; bottom: max(22px, env(safe-area-inset-bottom)); z-index: 50; transform: translate(-50%, 20px);
+  background: var(--white); color: var(--navy); padding: 10px 18px; font-weight: 700; border-radius: 3px; opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .25s var(--ease-out); box-shadow: 0 12px 28px -10px rgba(0, 0, 0, .6); max-width: calc(100vw - 32px); text-align: center;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.site-footer { padding: 18px var(--gutter) max(18px, env(safe-area-inset-bottom)); text-align: center; color: var(--dim); font-size: .88rem; border-top: 1px solid #142238; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 760px) {
+  .board-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .board-cell:nth-child(3) { border-left: 0; }
+  .board-cell:nth-child(n + 3) { border-top: 1px solid var(--line); }
+  .top-mode { display: none; }
+}
+@media (max-width: 640px) {
+  .screen { padding-top: 12px; }
+  .brand .brand-txt { font-size: 1.15rem; }
+  .play-pill { font-size: .95rem; padding: 2px 9px; }
+  .top-score .num { font-size: 1.4rem; }
+  .top-score .unit { display: none; }
+  .icon-btn { width: 42px; height: 42px; }
+  .answer-zone { grid-template-columns: 1fr; }
+  #submitBtn { width: 100%; min-height: 56px; }
+  .timer { width: 70px; height: 70px; }
+  .t-num { font-size: 1.75rem; padding-bottom: 8px; }
+  .t-label { bottom: 13px; font-size: .58rem; }
+  .q-prompt { margin-top: 12px; }
+  .mode-row .btn { min-width: 0; flex: 1 1 100%; }
+  .drive-label, .gline text { display: none; }
+  .chip { min-height: 46px; }
+  .chip .c-val { font-size: .98rem; }
+  .res-play { grid-template-columns: auto minmax(0, 1fr); }
+  .rp-num { grid-row: 1 / 4; }
+  .rp-pts { grid-column: 2; grid-row: 3; text-align: left; font-size: 1.25rem; }
+  .res-actions .btn { min-width: 0; flex: 1 1 100%; }
+  .field-score { margin-left: 0; }
+}
+@media (max-width: 480px) {
+  body:not([data-phase="home"]) .brand .brand-txt { display: none; }
+}
+@media (max-width: 380px) {
+  .brand .brand-txt { display: none; }
+}
+@media (max-height: 720px) and (min-width: 641px) {
+  .q-prompt { font-size: clamp(1.5rem, 3.6vw, 2.2rem); }
+  .field { width: min(100%, calc(28vh * 4.44)); }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important; scroll-behavior: auto !important;
+  }
+  .beam, .hero-ball { animation: none !important; }
+}
+</style>
+</head>
+<body>
+<!-- Shared SVG symbols -->
+<svg class="svg-defs" aria-hidden="true" focusable="false">
+  <defs>
+    <radialGradient id="ballShade" cx="36%" cy="28%" r="80%">
+      <stop offset="0" stop-color="#C2713A"/>
+      <stop offset=".55" stop-color="#8A4519"/>
+      <stop offset="1" stop-color="#4A2006"/>
+    </radialGradient>
+    <symbol id="sym-ball" viewBox="-40 -26 80 52">
+      <path d="M-36 0C-28 -20 -10 -24 0 -24S28 -20 36 0C28 20 10 24 0 24S-28 20 -36 0Z" fill="url(#ballShade)" stroke="#2A1003" stroke-width="2"/>
+      <path d="M-23 -16.5C-26.5 -6 -26.5 6 -23 16.5M23 -16.5C26.5 -6 26.5 6 23 16.5" fill="none" stroke="#F7F9FC" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M-11 -2.5H11" stroke="#F7F9FC" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M-8 -6.5V1.5M-3 -6.5V1.5M2 -6.5V1.5M7 -6.5V1.5" stroke="#F7F9FC" stroke-width="2.2" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="bg-stadium" aria-hidden="true"><span class="bank bank-l"></span><span class="bank bank-r"></span><span class="crowd"></span></div>
+<div id="lights" class="lights" aria-hidden="true"></div>
+<canvas id="confetti" aria-hidden="true" hidden></canvas>
+<div id="srPolite" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<div id="srAssert" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+<header class="topbar" id="topbar">
+  <button type="button" class="brand" id="brandBtn" aria-label="GRONKILLION home">
+    <svg viewBox="-40 -26 80 52" aria-hidden="true"><use href="#sym-ball" x="-40" y="-26" width="80" height="52"/></svg>
+    <span class="brand-txt">GRONKILLION</span>
+  </button>
+  <div class="top-game" id="topGame" hidden>
+    <span class="play-pill"><span id="topPlay">Play 1 of 7</span></span>
+    <span class="top-mode" id="topMode">Daily Challenge</span>
+  </div>
+  <div class="top-right">
+    <p class="top-score" id="topScoreWrap" hidden><span class="num" id="topScore">0</span><span class="unit">PTS</span></p>
+    <button type="button" class="icon-btn" id="soundBtn" aria-pressed="false" aria-label="Sound effects">
+      <svg class="snd-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 9.5l5 5m0-5l-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <svg class="snd-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.6 6a8.6 8.6 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button type="button" class="icon-btn" id="helpBtn" aria-label="How to play">?</button>
+  </div>
+</header>
+
+<main id="app">
+  <!-- HOME -->
+  <section id="screen-home" class="screen screen-home" aria-labelledby="wordmark">
+    <div class="hero">
+      <div class="hero-beams" aria-hidden="true"><span class="beam beam-l"></span><span class="beam beam-r"></span></div>
+      <h1 class="wordmark" id="wordmark" aria-label="GRONKILLION">
+        <span class="wm-txt" aria-hidden="true">GR</span><svg class="wm-ball" viewBox="-40 -26 80 52" aria-hidden="true"><use href="#sym-ball" x="-40" y="-26" width="80" height="52"/></svg><span class="wm-txt" aria-hidden="true">NKILLION</span>
+      </h1>
+      <div class="chain" aria-hidden="true"></div>
+      <p class="tagline">Think NFL. Go Deep. Score Big.</p>
+      <p class="subtag">The obvious answers get first downs. The legends get touchdowns.</p>
+      <div class="resume" id="resumeBox" hidden></div>
+      <button type="button" class="btn btn-kickoff" id="kickoffBtn">
+        <span class="k-in"><span class="k-main">Kickoff</span><span class="k-sub" id="kickoffSub">Today's Daily Challenge</span></span>
+      </button>
+      <div class="mode-row">
+        <button type="button" class="btn btn-ghost" id="dailyBtn"><span>Daily Challenge</span></button>
+        <button type="button" class="btn btn-ghost" id="unlimitedBtn"><span>Unlimited Mode</span></button>
+        <button type="button" class="btn btn-ghost" id="howBtn"><span>How to Play</span></button>
+      </div>
+      <p class="daily-note" id="dailyNote"></p>
+    </div>
+    <div class="hero-field" aria-hidden="true">
+      <div class="turf"></div>
+      <svg class="hero-ball" viewBox="-40 -26 80 52"><use href="#sym-ball" x="-40" y="-26" width="80" height="52"/></svg>
+    </div>
+    <section class="board" aria-label="Your record">
+      <dl class="board-grid">
+        <div class="board-cell"><dt>Unlimited high score</dt><dd class="gold" id="statHigh">0</dd></div>
+        <div class="board-cell"><dt>Today's Daily</dt><dd id="statDaily"><span class="small">Not played</span></dd></div>
+        <div class="board-cell"><dt>Games played</dt><dd id="statGames">0</dd></div>
+        <div class="board-cell"><dt>Best rarity</dt><dd id="statTier"><span class="small">None yet</span></dd></div>
+      </dl>
+    </section>
+    <p class="storage-note" id="storageNote" hidden>Browser storage is turned off, so scores and settings won't be saved after you close this page.</p>
+  </section>
+
+  <!-- GAME -->
+  <section id="screen-game" class="screen screen-game" aria-labelledby="qPrompt" hidden>
+    <article class="qcard" id="qcard" data-phase="preview">
+      <div class="q-main">
+        <div class="qcard-head">
+          <div class="q-meta">
+            <span class="cat-chip"><span id="qCategory">Category</span></span>
+            <span class="q-count" id="qCount">Play 1 of 7</span>
+          </div>
+          <div class="timer" id="timer" role="timer" aria-label="Play clock" data-state="snap">
+            <svg viewBox="0 0 80 80" aria-hidden="true">
+              <circle class="t-track" cx="40" cy="40" r="34"/>
+              <circle class="t-prog" id="timerProg" cx="40" cy="40" r="34" stroke-dasharray="213.63" stroke-dashoffset="0"/>
+            </svg>
+            <span class="t-num" id="timerNum" aria-hidden="true">3</span>
+            <span class="t-label" id="timerLabel" aria-hidden="true">Snap</span>
+          </div>
+        </div>
+        <h2 class="q-prompt" id="qPrompt" tabindex="-1">Question</h2>
+        <p class="q-scope" id="qScope"></p>
+      </div>
+
+      <form class="answer-zone" id="answerForm" autocomplete="off" novalidate>
+        <label class="sr-only" for="answerInput">Your answer</label>
+        <div class="input-wrap" id="inputWrap">
+          <input id="answerInput" type="text" name="answer" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="go" maxlength="64" placeholder="Type your answer" aria-describedby="feedback qScope">
+          <span class="i-icon" aria-hidden="true">✓</span>
+        </div>
+        <button type="submit" class="btn btn-primary" id="submitBtn"><span>Submit Answer</span></button>
+        <div class="answer-meta">
+          <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+          <button type="button" class="btn-text" id="skipBtn">Skip play</button>
+        </div>
+      </form>
+
+      <section class="reveal" id="reveal" aria-labelledby="rvAnswer" hidden>
+        <div class="burst" aria-hidden="true"></div>
+        <p class="rv-status" id="rvStatus">Accepted</p>
+        <p class="rv-answer" id="rvAnswer" tabindex="-1">Answer</p>
+        <p class="rv-tier"><span class="tier-badge" id="rvTier" data-tier="chalk"><span class="glyph" aria-hidden="true">●</span><span class="t-name">Chalk Pick</span></span></p>
+        <p class="rv-points" id="rvPoints">+10 points</p>
+        <p class="rv-flavor" id="rvFlavor"></p>
+        <p class="rv-note" id="rvNote" hidden></p>
+        <div class="rv-more" id="rvMore" hidden></div>
+        <button type="button" class="btn btn-primary" id="nextBtn"><span>Next Play</span></button>
+      </section>
+    </article>
+
+    <div class="field-wrap" id="gameField">
+      <div class="field-head">
+        <p class="zone-label" data-role="zone" data-zone="opening">Opening Drive</p>
+        <p class="yard-pos"><span class="yard-marker" data-role="marker">Own goal line</span><span class="yard-gain" data-role="yards">0 yards</span></p>
+        <p class="field-score"><span data-role="score">0</span><span class="of">/700 PTS</span></p>
+      </div>
+      <div class="field" data-role="field" role="img" aria-label="Football field"></div>
+      <ol class="drive-chips" data-role="chips" aria-label="Drive summary"></ol>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="screen-results" class="screen screen-results" aria-labelledby="resRank" hidden>
+    <div class="res-hero" id="resHero">
+      <p class="res-mode" id="resMode">Unlimited Mode</p>
+      <p class="res-score"><span class="big" id="resScore">0</span><span class="of">/700</span></p>
+      <h2 class="res-rank" id="resRank" tabindex="-1">Rookie</h2>
+      <p class="res-msg" id="resMsg"></p>
+      <p class="res-badge" id="resBadge" hidden><span>New high score</span></p>
+    </div>
+    <div class="field-wrap" id="resField">
+      <div class="field-head">
+        <p class="zone-label" data-role="zone" data-zone="opening">Opening Drive</p>
+        <p class="yard-pos"><span class="yard-marker" data-role="marker">Own goal line</span><span class="yard-gain" data-role="yards">0 yards</span></p>
+        <p class="field-score"><span data-role="score">0</span><span class="of">/700 PTS</span></p>
+      </div>
+      <div class="field" data-role="field" role="img" aria-label="Final field position"></div>
+      <ol class="drive-chips" data-role="chips" aria-label="Drive summary"></ol>
+    </div>
+    <div class="res-best" id="resBest"></div>
+    <ol class="res-plays" id="resPlays" aria-label="Your seven plays"></ol>
+    <div class="res-actions">
+      <button type="button" class="btn btn-primary" id="replayBtn"><span>Play Again</span></button>
+      <button type="button" class="btn btn-gold" id="shareBtn"><span>Share Results</span></button>
+      <button type="button" class="btn btn-ghost" id="resHomeBtn"><span>Return Home</span></button>
+    </div>
+    <p class="res-next" id="resNext"></p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p>GRONKILLION is an independent football trivia game and is not affiliated with or endorsed by the NFL.</p>
+</footer>
+
+<!-- How to play -->
+<dialog id="howDialog" aria-labelledby="howTitle">
+  <div class="dlg">
+    <h2 id="howTitle">How to play</h2>
+    <p>Seven plays make one drive. Each play is an NFL prompt with lots of correct answers. Type one in, and dig deep: the less obvious your answer, the more yards you gain.</p>
+    <h3>The play clock</h3>
+    <ul>
+      <li>You get a 3-second snap count to read the prompt, then 25 seconds to answer.</li>
+      <li>A wrong or unrecognized answer doesn't end the play. Keep trying until the clock hits zero.</li>
+      <li>Your first accepted answer locks in the play.</li>
+    </ul>
+    <h3>Rarity scoring</h3>
+    <table class="tier-table" id="tierTable"><tbody></tbody></table>
+    <p style="margin-top:8px;color:var(--muted);font-size:.95rem">Rarity tiers are curated estimates of how likely an average fan is to think of each answer. They are not live player statistics.</p>
+    <h3>The field</h3>
+    <p>Every point moves the ball downfield. A perfect 700-point drive reaches the end zone for a touchdown.</p>
+    <h3>Typing tips</h3>
+    <ul>
+      <li>Capitalization, punctuation and suffixes like Jr. or III don't matter.</li>
+      <li>Last names work when only one well-known player has that name. Otherwise, add a first name.</li>
+      <li>Well-known nicknames work, and so do team nicknames, cities and abbreviations like KC or SF.</li>
+    </ul>
+    <h3>Modes</h3>
+    <ul>
+      <li><strong>Daily Challenge:</strong> the same seven plays for everyone each UTC day. One scored attempt per day.</li>
+      <li><strong>Unlimited Mode:</strong> play as many drives as you like.</li>
+    </ul>
+    <form method="dialog" class="dlg-actions"><button class="btn btn-primary" value="close"><span>Got it</span></button></form>
+  </div>
+</dialog>
+
+<!-- Confirm -->
+<dialog id="confirmDialog" aria-labelledby="confirmTitle">
+  <form method="dialog" class="dlg">
+    <h2 id="confirmTitle">Are you sure?</h2>
+    <p id="confirmText"></p>
+    <div class="dlg-actions">
+      <button class="btn btn-ghost" value="cancel" id="confirmCancel"><span>Cancel</span></button>
+      <button class="btn btn-primary" value="ok" id="confirmOk"><span>OK</span></button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Share fallback -->
+<dialog id="shareDialog" aria-labelledby="shareTitle">
+  <div class="dlg">
+    <h2 id="shareTitle">Share your drive</h2>
+    <p style="margin-bottom:10px">Copy this summary and paste it anywhere. It doesn't reveal any answers.</p>
+    <label class="sr-only" for="shareText">Results summary</label>
+    <textarea id="shareText" readonly></textarea>
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-gold" id="shareCopy"><span>Copy</span></button>
+      <form method="dialog"><button class="btn btn-ghost" value="close"><span>Close</span></button></form>
+    </div>
+  </div>
+</dialog>
+
+<div id="kickoffFx" class="kickoff-fx" aria-hidden="true" hidden>
+  <svg class="ko-ball" viewBox="-40 -26 80 52"><use href="#sym-ball" x="-40" y="-26" width="80" height="52"/></svg>
+  <p class="ko-word">Kickoff</p>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ==========================================================================
+   2. QUESTION DATABASE
+   --------------------------------------------------------------------------
+   Authoring format, compiled at startup into the runtime structure:
+     { id, category, prompt, scope,
+       answers: [{ canonical, aliases, rarity, points }] }
+   Facts are checked through the 2025 NFL season, Super Bowl LX (Feb 8, 2026),
+   the 2026 NFL Draft and the Pro Football Hall of Fame Class of 2026.
+   Every list is meant to be COMPLETE for its stated scope, so any correct
+   answer is accepted. Rarity tiers are curated estimates of how likely an
+   average fan is to recall each answer, not live submission statistics.
+   `near` holds short notes shown when a well-known wrong answer is entered.
+   ========================================================================== */
+const GRONK_DATA = {
+
+  /* ---------- Teams: current franchise + historical names and aliases ---------- */
+  teams: {
+    ARI: { name: 'Arizona Cardinals', aliases: ['Cardinals', 'Cards', 'Arizona', 'ARI', 'ARZ', 'Phoenix', 'Phoenix Cardinals', 'St. Louis Cardinals', 'Chicago Cardinals'] },
+    ATL: { name: 'Atlanta Falcons', aliases: ['Falcons', 'Atlanta', 'ATL', 'Dirty Birds'] },
+    BAL: { name: 'Baltimore Ravens', aliases: ['Ravens', 'Baltimore', 'BAL'] },
+    BUF: { name: 'Buffalo Bills', aliases: ['Bills', 'Buffalo', 'BUF'] },
+    CAR: { name: 'Carolina Panthers', aliases: ['Panthers', 'Carolina', 'CAR'] },
+    CHI: { name: 'Chicago Bears', aliases: ['Bears', 'Chicago', 'CHI', 'Da Bears', 'Monsters of the Midway', 'Decatur Staleys'] },
+    CIN: { name: 'Cincinnati Bengals', aliases: ['Bengals', 'Cincinnati', 'Cincy', 'CIN'] },
+    CLE: { name: 'Cleveland Browns', aliases: ['Browns', 'Cleveland', 'CLE'] },
+    DAL: { name: 'Dallas Cowboys', aliases: ['Cowboys', 'Dallas', 'DAL', "America's Team"] },
+    DEN: { name: 'Denver Broncos', aliases: ['Broncos', 'Denver', 'DEN'] },
+    DET: { name: 'Detroit Lions', aliases: ['Lions', 'Detroit', 'DET', 'Portsmouth Spartans'] },
+    GB:  { name: 'Green Bay Packers', aliases: ['Packers', 'Green Bay', 'GB', 'GNB', 'Pack'] },
+    HOU: { name: 'Houston Texans', aliases: ['Texans', 'Houston', 'HOU'] },
+    IND: { name: 'Indianapolis Colts', aliases: ['Colts', 'Indianapolis', 'Indy', 'IND', 'Baltimore Colts'] },
+    JAX: { name: 'Jacksonville Jaguars', aliases: ['Jaguars', 'Jags', 'Jacksonville', 'JAX', 'JAC'] },
+    KC:  { name: 'Kansas City Chiefs', aliases: ['Chiefs', 'Kansas City', 'KC', 'KAN', 'Dallas Texans'] },
+    LV:  { name: 'Las Vegas Raiders', aliases: ['Raiders', 'Las Vegas', 'Vegas', 'LV', 'LVR', 'Oakland', 'Oakland Raiders', 'Los Angeles Raiders', 'LA Raiders', 'OAK'] },
+    LAC: { name: 'Los Angeles Chargers', aliases: ['Chargers', 'LA Chargers', 'LAC', 'San Diego', 'San Diego Chargers', 'SD', 'SDG', 'Bolts'] },
+    LAR: { name: 'Los Angeles Rams', aliases: ['Rams', 'LA Rams', 'LAR', 'St. Louis Rams', 'Cleveland Rams'] },
+    MIA: { name: 'Miami Dolphins', aliases: ['Dolphins', 'Miami', 'MIA', 'Fins', 'Phins'] },
+    MIN: { name: 'Minnesota Vikings', aliases: ['Vikings', 'Minnesota', 'MIN', 'Vikes'] },
+    NE:  { name: 'New England Patriots', aliases: ['Patriots', 'Pats', 'New England', 'NE', 'NWE', 'Boston', 'Boston Patriots'] },
+    NO:  { name: 'New Orleans Saints', aliases: ['Saints', 'New Orleans', 'NO', 'NOR', 'NOLA'] },
+    NYG: { name: 'New York Giants', aliases: ['Giants', 'NY Giants', 'NYG', 'G-Men', 'Big Blue'] },
+    NYJ: { name: 'New York Jets', aliases: ['Jets', 'NY Jets', 'NYJ', 'New York Titans', 'Gang Green'] },
+    PHI: { name: 'Philadelphia Eagles', aliases: ['Eagles', 'Philadelphia', 'Philly', 'PHI'] },
+    PIT: { name: 'Pittsburgh Steelers', aliases: ['Steelers', 'Pittsburgh', 'PIT'] },
+    SF:  { name: 'San Francisco 49ers', aliases: ['49ers', 'Niners', 'Forty Niners', 'Forty-Niners', 'San Francisco', 'SF', 'SFO'] },
+    SEA: { name: 'Seattle Seahawks', aliases: ['Seahawks', 'Hawks', 'Seattle', 'SEA'] },
+    TB:  { name: 'Tampa Bay Buccaneers', aliases: ['Buccaneers', 'Bucs', 'Bucks', 'Tampa Bay', 'Tampa', 'TB', 'TAM'] },
+    TEN: { name: 'Tennessee Titans', aliases: ['Titans', 'Tennessee', 'TEN', 'Oilers', 'Houston Oilers', 'Tennessee Oilers'] },
+    WAS: { name: 'Washington Commanders', aliases: ['Commanders', 'Washington', 'WAS', 'WSH', 'Washington Football Team', 'Washington Redskins', 'Redskins'] }
+  },
+  // Names that could mean more than one franchise: always ask for clarification.
+  teamAmbiguous: {
+    'New York': ['NYG', 'NYJ'], 'NY': ['NYG', 'NYJ'],
+    'Los Angeles': ['LAR', 'LAC'], 'LA': ['LAR', 'LAC'],
+    'St. Louis': ['LAR', 'ARI'], 'STL': ['LAR', 'ARI']
+  },
+
+  /* ---------- Venues (host: false = recognized, but never hosted a Super Bowl) ---------- */
+  venues: {
+    superdome:     { name: 'Caesars Superdome', aliases: ['Superdome', 'Louisiana Superdome', 'Mercedes-Benz Superdome', 'New Orleans Superdome'] },
+    hard_rock:     { name: 'Hard Rock Stadium', aliases: ['Hard Rock', 'Joe Robbie Stadium', 'Joe Robbie', 'Pro Player Stadium', 'Pro Player Park', 'Pro Player', 'Dolphins Stadium', 'Dolphin Stadium', 'Land Shark Stadium', 'Sun Life Stadium', 'Sun Life', 'New Miami Stadium'] },
+    rose_bowl:     { name: 'Rose Bowl', aliases: ['Rose Bowl Stadium', 'Pasadena Rose Bowl'] },
+    orange_bowl:   { name: 'Miami Orange Bowl', aliases: ['Orange Bowl', 'Burdine Stadium', 'Roddy Burdine Stadium'] },
+    levis:         { name: "Levi's Stadium", aliases: ["Levi's", 'Levis Stadium'] },
+    state_farm:    { name: 'State Farm Stadium', aliases: ['State Farm', 'University of Phoenix Stadium', 'Cardinals Stadium'] },
+    raymond_james: { name: 'Raymond James Stadium', aliases: ['Raymond James', 'Ray Jay', 'Ray-Jay'] },
+    sofi:          { name: 'SoFi Stadium', aliases: ['SoFi', 'So Fi Stadium'] },
+    allegiant:     { name: 'Allegiant Stadium', aliases: ['Allegiant'] },
+    mb_stadium:    { name: 'Mercedes-Benz Stadium', aliases: ['MBS'] },
+    att:           { name: 'AT&T Stadium', aliases: ['AT&T', 'Cowboys Stadium', 'Dallas Cowboys Stadium', 'Jerry World', 'Jerryworld'] },
+    metlife:       { name: 'MetLife Stadium', aliases: ['MetLife', 'Met Life Stadium', 'New Meadowlands Stadium', 'Meadowlands Stadium'] },
+    nrg:           { name: 'NRG Stadium', aliases: ['NRG', 'Reliant Stadium', 'Reliant'] },
+    us_bank:       { name: 'U.S. Bank Stadium', aliases: ['US Bank', 'U.S. Bank'] },
+    lucas_oil:     { name: 'Lucas Oil Stadium', aliases: ['Lucas Oil'] },
+    ford_field:    { name: 'Ford Field', aliases: [] },
+    coliseum:      { name: 'Los Angeles Memorial Coliseum', aliases: ['LA Memorial Coliseum', 'Memorial Coliseum', 'LA Coliseum', 'Los Angeles Coliseum', 'Coliseum'] },
+    qualcomm:      { name: 'Jack Murphy Stadium', display: 'Jack Murphy / Qualcomm Stadium', aliases: ['San Diego Jack Murphy Stadium', 'Jack Murphy', 'The Murph', 'Qualcomm Stadium', 'Qualcomm', 'San Diego Stadium', 'SDCCU Stadium'] },
+    georgia_dome:  { name: 'Georgia Dome', aliases: [] },
+    sun_devil:     { name: 'Sun Devil Stadium', aliases: [] },
+    silverdome:    { name: 'Pontiac Silverdome', aliases: ['Silverdome'] },
+    metrodome:     { name: 'Hubert H. Humphrey Metrodome', display: 'Metrodome', aliases: ['Metrodome', 'Humphrey Metrodome', 'HHH Metrodome', 'Minnesota Metrodome'] },
+    tampa_stadium: { name: 'Tampa Stadium', aliases: ['Big Sombrero', "Houlihan's Stadium"] },
+    stanford:      { name: 'Stanford Stadium', aliases: [] },
+    tulane:        { name: 'Tulane Stadium', aliases: [] },
+    alltel:        { name: 'Alltel Stadium', display: 'Alltel Stadium (now EverBank Stadium)', aliases: ['Alltel', 'EverBank Stadium', 'EverBank Field', 'EverBank', 'TIAA Bank Field', 'Jacksonville Municipal Stadium'] },
+    rice_stadium:  { name: 'Rice Stadium', aliases: [] },
+    lambeau:       { name: 'Lambeau Field', host: false, aliases: ['Lambeau'] },
+    soldier:       { name: 'Soldier Field', host: false, aliases: [] },
+    arrowhead:     { name: 'Arrowhead Stadium', host: false, aliases: ['Arrowhead', 'GEHA Field at Arrowhead Stadium'] },
+    gillette:      { name: 'Gillette Stadium', host: false, aliases: ['Gillette'] },
+    linc:          { name: 'Lincoln Financial Field', host: false, aliases: ['The Linc'] },
+    lumen:         { name: 'Lumen Field', host: false, aliases: ['CenturyLink Field', 'Qwest Field'] },
+    highmark:      { name: 'Highmark Stadium', host: false, aliases: ['Ralph Wilson Stadium', 'Rich Stadium', 'New Era Field'] },
+    mt_bank:       { name: 'M&T Bank Stadium', host: false, aliases: [] },
+    acrisure:      { name: 'Acrisure Stadium', host: false, aliases: ['Heinz Field'] },
+    mile_high:     { name: 'Empower Field at Mile High', host: false, aliases: ['Empower Field', 'Mile High Stadium', 'Mile High', 'Invesco Field at Mile High', 'Sports Authority Field at Mile High'] },
+    nissan:        { name: 'Nissan Stadium', host: false, aliases: ['LP Field', 'Adelphia Coliseum'] },
+    boa:           { name: 'Bank of America Stadium', host: false, aliases: ['Ericsson Stadium'] },
+    candlestick:   { name: 'Candlestick Park', host: false, aliases: ['Candlestick', '3Com Park', 'Monster Park'] },
+    texas_stadium: { name: 'Texas Stadium', host: false, aliases: [] },
+    giants_stad:   { name: 'Giants Stadium', host: false, aliases: [] },
+    three_rivers:  { name: 'Three Rivers Stadium', host: false, aliases: [] },
+    veterans:      { name: 'Veterans Stadium', host: false, aliases: ['The Vet'] },
+    wembley:       { name: 'Wembley Stadium', host: false, aliases: ['Wembley'] },
+    northwest:     { name: 'Northwest Stadium', host: false, aliases: ['FedExField', 'FedEx Field', 'Jack Kent Cooke Stadium'] },
+    paycor:        { name: 'Paycor Stadium', host: false, aliases: ['Paul Brown Stadium'] },
+    huntington:    { name: 'Huntington Bank Field', host: false, aliases: ['Cleveland Browns Stadium', 'FirstEnergy Stadium'] }
+  },
+  venueAmbiguous: { 'Mercedes-Benz': ['superdome', 'mb_stadium'] },
+
+  /* ---------- Player nicknames and alternate names (must be unambiguous) ---------- */
+  playerAliases: {
+    'Tom Brady': ['TB12', 'Thomas Brady', 'Tommy Brady'],
+    'Patrick Mahomes': ['Pat Mahomes', 'Patrick Mahomes II'],
+    'Joe Montana': ['Joe Cool'],
+    'Peyton Manning': ['Peyton', 'The Sheriff'],
+    'Eli Manning': ['Eli'],
+    'Aaron Rodgers': ['A-Rod', 'ARod'],
+    'Kenneth Walker III': ['Ken Walker', 'Ken Walker III', 'KW3'],
+    'Joe Namath': ['Broadway Joe'],
+    'Roger Staubach': ['Roger the Dodger'],
+    'John Riggins': ['Riggo', 'The Diesel'],
+    'Larry Csonka': ['Zonk'],
+    'Len Dawson': ['Lenny Dawson'],
+    'Randy White': ['The Manster'],
+    'Ottis Anderson': ['O.J. Anderson'],
+    'Ken Stabler': ['Kenny Stabler', 'The Snake', 'Snake Stabler'],
+    'Johnny Unitas': ['Johnny U', 'John Unitas'],
+    'Russell Wilson': ['DangeRuss'],
+    'Ben Roethlisberger': ['Big Ben'],
+    'Matthew Stafford': ['Matt Stafford'],
+    'Philip Rivers': ['Phillip Rivers'],
+    'Dan Marino': ['Danny Marino'],
+    'Derrick Henry': ['King Henry'],
+    'Saquon Barkley': ['Saquon'],
+    'Adrian Peterson': ['AP', 'All Day'],
+    'O.J. Simpson': ['OJ', 'The Juice'],
+    'Chris Johnson': ['CJ2K'],
+    'Christian McCaffrey': ['CMC', 'Run CMC'],
+    'LaDainian Tomlinson': ['LT'],
+    'Ezekiel Elliott': ['Zeke', 'Zeke Elliott'],
+    'James Cook': ['James Cook III'],
+    'LeSean McCoy': ['Shady', 'Shady McCoy'],
+    'Maurice Jones-Drew': ['MJD', 'Pocket Hercules'],
+    'Edgerrin James': ['Edge', 'Edgerrin'],
+    'Walter Payton': ['Sweetness'],
+    'Jerome Bettis': ['The Bus'],
+    'Terrell Owens': ['T.O.'],
+    'Larry Fitzgerald': ['Fitz', 'Larry Fitzgerald Jr.'],
+    'Cris Carter': ['Chris Carter'],
+    'Marvin Harrison': ['Marvin Harrison Sr.'],
+    'Tony Gonzalez': ['Tony G'],
+    'Tyreek Hill': ['Cheetah'],
+    'Jaxon Smith-Njigba': ['JSN'],
+    'Calvin Johnson': ['Megatron'],
+    'Antonio Brown': ['AB'],
+    'Chad Johnson': ['Ochocinco', 'Chad Ochocinco', 'Ocho'],
+    'Steve Smith Sr.': ['Agent 89'],
+    'Josh Gordon': ['Flash Gordon'],
+    'T.Y. Hilton': ['The Ghost'],
+    'Dave Casper': ['The Ghost', 'Ghost Casper'],
+    'Mike Ditka': ['Iron Mike', 'Da Coach'],
+    'Kellen Winslow': ['Kellen Winslow Sr.'],
+    'Kellen Winslow II': ['Kellen Winslow Jr.'],
+    'Ozzie Newsome': ['Ozzie', 'The Wizard of Oz'],
+    'Lawrence Taylor': ['LT'],
+    'Reggie White': ['Minister of Defense', 'The Minister of Defense'],
+    'Deion Sanders': ['Deion', 'Prime Time', 'Primetime', 'Neon Deion', 'Coach Prime'],
+    'Joe Greene': ['Mean Joe Greene', 'Mean Joe'],
+    'Mike Singletary': ['Samurai Mike'],
+    'Patrick Surtain II': ['Pat Surtain', 'Pat Surtain II'],
+    'James Harrison': ['Silverback'],
+    'Terrell Suggs': ['T-Sizzle'],
+    'Lee Roy Selmon': ['Leroy Selmon'],
+    'Lester Hayes': ['The Judge'],
+    'Kenny Easley': ['Ken Easley'],
+    'Lamar Jackson': ['Lamar'],
+    'Matt Ryan': ['Matty Ice'],
+    'Steve McNair': ['Air McNair'],
+    'Boomer Esiason': ['Norman Esiason'],
+    'Fran Tarkenton': ['Francis Tarkenton', 'Scramblin Fran'],
+    'Paul Hornung': ['The Golden Boy'],
+    'Norm Van Brocklin': ['The Dutchman'],
+    'Earl Campbell': ['The Tyler Rose'],
+    'Todd Gurley': ['Todd Gurley II'],
+    'Odell Beckham Jr.': ['OBJ', 'Odell'],
+    'Dak Prescott': ['Dak'],
+    'Robert Griffin III': ['RG3', 'RGIII'],
+    'Cadillac Williams': ['Carnell Williams', 'Carnell Cadillac Williams'],
+    'Anthony Thomas': ['A-Train'],
+    'Sauce Gardner': ['Ahmad Gardner', 'Ahmad Sauce Gardner'],
+    'Darius Leonard': ['Shaquille Leonard', 'Shaq Leonard'],
+    'Jevon Kearse': ['The Freak'],
+    'Shawne Merriman': ['Lights Out'],
+    'Joe Burrow': ['Joey B', 'Joe Shiesty'],
+    'Baker Mayfield': ['Baker'],
+    'Cam Ward': ['Cameron Ward'],
+    'Jameis Winston': ['Famous Jameis'],
+    'Michael Vick': ['Mike Vick'],
+    'Vinny Testaverde': ['Vinnie Testaverde', 'Vincent Testaverde'],
+    'Bo Jackson': ['Bo'],
+    'Jadeveon Clowney': ['JD Clowney'],
+    'Ed "Too Tall" Jones': ['Too Tall Jones', 'Too Tall', 'Ed Jones'],
+    'Bubba Smith': ['Charles Bubba Smith'],
+    'Ki-Jana Carter': ['Kijana Carter'],
+    'Dan Wilkinson': ['Big Daddy Wilkinson', 'Big Daddy'],
+    'John Matuszak': ['The Tooz'],
+    'Bill Belichick': ['The Hoodie'],
+    'Andy Reid': ['Big Red'],
+    'Bill Walsh': ['The Genius'],
+    'Bill Parcells': ['Big Tuna', 'The Big Tuna'],
+    'Jon Gruden': ['Chucky'],
+    'Weeb Ewbank': ['Wilbur Ewbank'],
+    'Mike Macdonald': ['Mike McDonald'],
+    'Bud Grant': ['Harry Grant'],
+    'Zac Taylor': ['Zach Taylor'],
+    'Ron Rivera': ['Riverboat Ron'],
+    'Forrest Gregg': ['Forest Gregg'],
+    'Will Anderson Jr.': ['Will Anderson']
+  },
+
+  /* ---------- Well-known names outside the answer lists ----------
+     They make surname-only answers ask for a first name, and stop typo
+     tolerance from turning a real non-qualifying player into a qualifier. */
+  extraPlayers: [
+    'Marvin Harrison Jr.', 'Derek Carr', 'Dalvin Cook', 'Jahmyr Gibbs', 'Jarvis Landry', 'Brian Flores', 'Jay Gruden',
+    'Reggie Bush', 'Ray Rice', 'Earl Thomas', 'Joe Thomas', 'Zach Thomas', 'Demaryius Thomas', 'Andre Reed', 'Sterling Sharpe',
+    'Rob Gronkowski', 'Jimmy Graham', 'Don Hutson', 'Deacon Jones', 'Dick Butkus', 'DeSean Jackson', 'Vincent Jackson',
+    'Rickey Jackson', 'Steven Jackson', 'Keith Jackson', 'Jim Kelly', 'Tony Dorsett', 'Marshawn Lynch', 'Puka Nacua',
+    'Brock Bowers', 'Travis Hunter', 'Johnny Manziel', 'Tim Tebow', 'Chuck Bednarik', 'Patrick Peterson', 'Larry Allen',
+    'Eric Allen', 'Keenan Allen', 'Darrelle Revis', 'Champ Bailey', 'Ronnie Lott', 'A.J. Brown', 'Troy Brown', 'Willie Brown',
+    'Paul Brown', 'Amon-Ra St. Brown', 'Michael Irvin', 'Gale Sayers', 'Al Baker', 'Shaquil Barrett', 'Robert Mathis',
+    'Dwight Freeney', 'Aidan Hutchinson', 'Brock Purdy', 'Drake Maye', 'Kirk Cousins', 'Rod Smith', 'DeVonta Smith',
+    'Geno Smith', 'Gary Anderson', 'Morten Andersen', 'Jamal Anderson', 'Bob Hayes', 'Larry Johnson', 'David Johnson',
+    'Aaron Jones', 'Daniel Jones', 'Chandler Jones', 'Sean Taylor', 'Fred Taylor', 'Charley Taylor', 'Dwight White',
+    'Danny White', 'Kyren Williams', 'Aeneas Williams', 'Roy Williams', 'Kevin Williams', 'Larry Wilson', 'Zach Wilson',
+    'Darren Woodson', 'Bryant Young', 'Marvin Lewis', 'Al Davis', 'Thomas Davis', 'Vernon Davis', 'Willie Davis',
+    'Doug Martin', 'Rodney Harrison', 'Heath Miller', 'Shedeur Sanders', 'Emmanuel Sanders', 'Herschel Walker',
+    'Mike Webster', 'Eddie Brown', 'Matt Hasselbeck', 'Kerry Collins', 'Rex Grossman', 'Colin Kaepernick',
+    'Jake Delhomme', "Neil O'Donnell", 'Stan Humphries', 'Chris Chandler', 'Tony Eason', 'Vince Ferragamo',
+    'Ron Jaworski', 'David Woodley', 'Billy Kilmer', 'Daryle Lamonica', 'Joe Kapp', 'Jimmy Garoppolo', 'Donovan McNabb',
+    'Otto Graham', 'Randall Cunningham', 'Jack Ham', 'Jack Youngblood', 'Carl Eller', 'Merlin Olsen', 'Bob Lilly',
+    'John Randle', 'Cameron Jordan', 'Sean McDermott', 'Joey Porter', 'Ty Law', 'Kevin Mawae'
+  ],
+
+  /* ---------- Questions ---------- */
+  questions: [
+
+    /* ===== SUPER BOWL HISTORY ===== */
+    {
+      id: 'superbowl_mvp', category: 'Super Bowl History', difficulty: 'easy', type: 'player',
+      prompt: 'Name a player who has won Super Bowl MVP.',
+      scope: 'Any Super Bowl, I through LX (1967–2026).',
+      tiers: {
+        chalk: ['Tom Brady', 'Patrick Mahomes', 'Joe Montana'],
+        starter: ['Peyton Manning', 'Eli Manning', 'Jerry Rice', 'John Elway', 'Terry Bradshaw', 'Drew Brees', 'Aaron Rodgers', 'Jalen Hurts', 'Kenneth Walker III', 'Joe Namath', 'Bart Starr'],
+        pro_bowler: ['Troy Aikman', 'Emmitt Smith', 'Steve Young', 'Kurt Warner', 'Ray Lewis', 'Von Miller', 'Nick Foles', 'Joe Flacco', 'Cooper Kupp', 'Julian Edelman', 'Roger Staubach', 'Franco Harris', 'Lynn Swann', 'Marcus Allen', 'Doug Williams'],
+        all_pro: ['Terrell Davis', 'Desmond Howard', 'Hines Ward', 'Santonio Holmes', 'Phil Simms', 'Jim Plunkett', 'John Riggins', 'Larry Csonka', 'Len Dawson'],
+        hall_of_famer: ['Dexter Jackson', 'Malcolm Smith', 'Deion Branch', 'Richard Dent', 'Mark Rypien', 'Fred Biletnikoff', 'Randy White'],
+        gronkillion: ['Chuck Howley', 'Jake Scott', 'Harvey Martin', 'Ottis Anderson', 'Larry Brown']
+      },
+      near: {
+        'Josh Allen': 'Josh Allen has never played in a Super Bowl.',
+        'Dan Marino': 'Marino played in one Super Bowl (XIX) and lost.',
+        'Lawrence Taylor': 'LT won two rings but never the Super Bowl MVP award.'
+      }
+    },
+    {
+      id: 'superbowl_winning_coach', category: 'Super Bowl History', difficulty: 'medium', type: 'player',
+      prompt: 'Name a head coach who has won a Super Bowl.',
+      scope: 'Any Super Bowl, I through LX.',
+      tiers: {
+        chalk: ['Bill Belichick', 'Andy Reid', 'Vince Lombardi'],
+        starter: ['Bill Walsh', 'Tom Landry', 'Don Shula', 'Sean McVay', 'Pete Carroll', 'Sean Payton', 'Mike Tomlin', 'Tom Coughlin', 'Nick Sirianni', 'Mike Macdonald', 'Bill Parcells', 'Jimmy Johnson'],
+        pro_bowler: ['Joe Gibbs', 'Chuck Noll', 'John Madden', 'Mike Ditka', 'Tony Dungy', 'Bill Cowher', 'John Harbaugh', 'Bruce Arians', 'Jon Gruden', 'Mike Shanahan', 'Doug Pederson', 'Mike McCarthy', 'Mike Holmgren'],
+        all_pro: ['Dick Vermeil', 'Gary Kubiak', 'Brian Billick', 'George Seifert', 'Barry Switzer', 'Tom Flores'],
+        hall_of_famer: ['Hank Stram', 'Weeb Ewbank'],
+        gronkillion: ['Don McCafferty']
+      },
+      near: {
+        'Kyle Shanahan': 'Kyle Shanahan has lost two Super Bowls as a head coach.',
+        'Marv Levy': 'Levy lost four straight Super Bowls with Buffalo.',
+        'Bud Grant': 'Grant went 0–4 in Super Bowls with Minnesota.',
+        'Mike Vrabel': 'Vrabel won three rings as a player, but lost Super Bowl LX as a head coach.',
+        'Jim Harbaugh': 'Jim lost Super Bowl XLVII to his brother John.',
+        'Marty Schottenheimer': 'Schottenheimer never reached a Super Bowl.'
+      }
+    },
+    {
+      id: 'mvp_and_sb_mvp', category: 'Super Bowl History', difficulty: 'hard', type: 'player',
+      prompt: 'Name a player who won AP NFL MVP and Super Bowl MVP for the same season.',
+      scope: 'Both awards for the same season, through the 2025 season.',
+      tiers: {
+        chalk: ['Patrick Mahomes'],
+        starter: ['Joe Montana'],
+        pro_bowler: ['Kurt Warner', 'Steve Young'],
+        all_pro: ['Terry Bradshaw'],
+        hall_of_famer: ['Emmitt Smith'],
+        gronkillion: ['Bart Starr']
+      },
+      near: {
+        'Tom Brady': "Brady's MVP seasons (2007, 2010, 2017) didn't end with a Super Bowl win.",
+        'Terrell Davis': 'Davis was Super Bowl MVP after 1997 and league MVP in 1998.',
+        'Peyton Manning': "Peyton's Super Bowl MVP came in the 2006 season, when he wasn't league MVP."
+      }
+    },
+
+    /* ===== QUARTERBACKS ===== */
+    {
+      id: 'qb_super_bowl_winners', category: 'Quarterbacks', difficulty: 'easy', type: 'player',
+      prompt: 'Name a quarterback who started a Super Bowl win.',
+      scope: 'Starting QB of the winning team, Super Bowls I–LX.',
+      tiers: {
+        chalk: ['Tom Brady', 'Patrick Mahomes', 'Joe Montana'],
+        starter: ['Peyton Manning', 'Eli Manning', 'John Elway', 'Terry Bradshaw', 'Drew Brees', 'Aaron Rodgers', 'Troy Aikman', 'Jalen Hurts', 'Russell Wilson'],
+        pro_bowler: ['Steve Young', 'Brett Favre', 'Kurt Warner', 'Ben Roethlisberger', 'Joe Flacco', 'Nick Foles', 'Matthew Stafford', 'Sam Darnold', 'Roger Staubach', 'Joe Namath'],
+        all_pro: ['Bart Starr', 'Jim Plunkett', 'Phil Simms', 'Doug Williams', 'Trent Dilfer', 'Ken Stabler', 'Bob Griese', 'Joe Theismann', 'Jim McMahon', 'Len Dawson'],
+        hall_of_famer: ['Brad Johnson', 'Mark Rypien', 'Johnny Unitas'],
+        gronkillion: ['Jeff Hostetler']
+      },
+      near: {
+        'Earl Morrall': 'Morrall finished Super Bowl V, but Johnny Unitas started it.',
+        'Dan Marino': 'Marino started Super Bowl XIX and lost.',
+        'Jim Kelly': 'Kelly started four straight Super Bowls and lost them all.',
+        'Fran Tarkenton': 'Tarkenton started three Super Bowls and lost each one.'
+      }
+    },
+    {
+      id: 'qb_400_td', category: 'Quarterbacks', difficulty: 'medium', type: 'player',
+      prompt: 'Name a quarterback with at least 400 career touchdown passes.',
+      scope: 'Regular-season totals through the 2025 season.',
+      tiers: {
+        chalk: ['Tom Brady', 'Drew Brees', 'Peyton Manning'],
+        starter: ['Brett Favre', 'Aaron Rodgers'],
+        pro_bowler: ['Dan Marino'],
+        all_pro: ['Ben Roethlisberger'],
+        hall_of_famer: ['Philip Rivers'],
+        gronkillion: ['Matthew Stafford']
+      },
+      near: {
+        'Eli Manning': 'Eli finished with 366 touchdown passes.',
+        'Matt Ryan': 'Matt Ryan finished with 381.',
+        'John Elway': 'Elway threw 300.',
+        'Fran Tarkenton': 'Tarkenton threw 342.',
+        'Joe Montana': 'Montana threw 273.'
+      }
+    },
+    {
+      id: 'qb_two_franchises', category: 'Quarterbacks', difficulty: 'hard', type: 'player',
+      prompt: 'Name a quarterback who started a Super Bowl for two different franchises.',
+      scope: 'Super Bowls I–LX.',
+      tiers: {
+        chalk: ['Tom Brady'],
+        starter: ['Peyton Manning'],
+        all_pro: ['Kurt Warner'],
+        gronkillion: ['Craig Morton']
+      },
+      near: {
+        'Joe Montana': 'All four of Montana\'s Super Bowl starts came with San Francisco.',
+        'Brett Favre': 'Both of Favre\'s Super Bowl starts came with Green Bay.',
+        'John Elway': 'All five of Elway\'s Super Bowl starts came with Denver.',
+        'Russell Wilson': 'Both of Wilson\'s Super Bowl starts came with Seattle.'
+      }
+    },
+
+    /* ===== RUNNING BACKS ===== */
+    {
+      id: 'rb_2000_season', category: 'Running Backs', difficulty: 'medium', type: 'player',
+      prompt: 'Name a running back who rushed for 2,000+ yards in a single season.',
+      scope: 'Regular season, through the 2025 season.',
+      tiers: {
+        chalk: ['Derrick Henry', 'Saquon Barkley'],
+        starter: ['Barry Sanders', 'Adrian Peterson', 'Eric Dickerson'],
+        pro_bowler: ['O.J. Simpson'],
+        all_pro: ['Terrell Davis', 'Chris Johnson'],
+        gronkillion: ['Jamal Lewis']
+      },
+      near: {
+        'Earl Campbell': "Campbell's best season was 1,934 yards in 1980.",
+        'Walter Payton': "Payton's best season was 1,852 yards in 1977.",
+        'Emmitt Smith': "Emmitt's best season was 1,773 yards in 1995.",
+        'LaDainian Tomlinson': "LT's best season was 1,815 yards in 2006.",
+        'Jim Brown': "Jim Brown's best season was 1,863 yards in 1963."
+      }
+    },
+    {
+      id: 'rb_rushing_champs', category: 'Running Backs', difficulty: 'medium', type: 'player',
+      prompt: 'Name a player who led the NFL in rushing yards in a season from 2000 to 2025.',
+      scope: 'Regular-season rushing-yards leaders, 2000–2025.',
+      tiers: {
+        chalk: ['Saquon Barkley', 'Derrick Henry'],
+        starter: ['Christian McCaffrey', 'Adrian Peterson', 'LaDainian Tomlinson', 'Ezekiel Elliott', 'Jonathan Taylor'],
+        pro_bowler: ['Josh Jacobs', 'James Cook', 'Chris Johnson', 'Shaun Alexander', 'LeSean McCoy'],
+        all_pro: ['Jamal Lewis', 'DeMarco Murray', 'Maurice Jones-Drew', 'Arian Foster', 'Kareem Hunt', 'Edgerrin James', 'Ricky Williams'],
+        hall_of_famer: ['Priest Holmes'],
+        gronkillion: ['Curtis Martin']
+      },
+      near: {
+        'Marshawn Lynch': 'Beast Mode never led the league in rushing yards.',
+        'Frank Gore': 'Gore never led the league in rushing yards.'
+      }
+    },
+    {
+      id: 'rb_13000_career', category: 'Running Backs', difficulty: 'hard', type: 'player',
+      prompt: 'Name a player with at least 13,000 career rushing yards.',
+      scope: 'Regular-season totals through the 2025 season.',
+      tiers: {
+        chalk: ['Emmitt Smith', 'Walter Payton', 'Barry Sanders'],
+        starter: ['Adrian Peterson', 'LaDainian Tomlinson'],
+        pro_bowler: ['Frank Gore', 'Jerome Bettis'],
+        all_pro: ['Eric Dickerson', 'Derrick Henry'],
+        gronkillion: ['Curtis Martin']
+      },
+      near: {
+        'Jim Brown': 'Jim Brown finished with 12,312 rushing yards.',
+        'Tony Dorsett': 'Dorsett finished with 12,739 rushing yards.'
+      }
+    },
+
+    /* ===== WIDE RECEIVERS ===== */
+    {
+      id: 'wr_100_rec_td', category: 'Wide Receivers', difficulty: 'medium', type: 'player',
+      prompt: 'Name a player with at least 100 career receiving touchdowns.',
+      scope: 'Regular-season totals through the 2025 season.',
+      tiers: {
+        chalk: ['Jerry Rice', 'Randy Moss'],
+        starter: ['Terrell Owens', 'Larry Fitzgerald'],
+        pro_bowler: ['Cris Carter', 'Marvin Harrison', 'Davante Adams'],
+        all_pro: ['Tony Gonzalez', 'Antonio Gates', 'Mike Evans'],
+        hall_of_famer: ['Tim Brown'],
+        gronkillion: ['Steve Largent']
+      },
+      near: {
+        'Don Hutson': 'Hutson finished with 99 receiving touchdowns, one short.',
+        'Rob Gronkowski': 'Gronk finished with 92 receiving touchdowns.',
+        'Calvin Johnson': 'Megatron finished with 83 receiving touchdowns.'
+      }
+    },
+    {
+      id: 'wr_yards_champs', category: 'Wide Receivers', difficulty: 'medium', type: 'player',
+      prompt: 'Name a player who led the NFL in receiving yards in a season from 2000 to 2025.',
+      scope: 'Regular-season receiving-yards leaders, 2000–2025.',
+      tiers: {
+        chalk: ["Ja'Marr Chase", 'Justin Jefferson', 'Tyreek Hill'],
+        starter: ['Jaxon Smith-Njigba', 'Cooper Kupp', 'Calvin Johnson', 'Antonio Brown', 'Julio Jones'],
+        pro_bowler: ['Michael Thomas', 'Stefon Diggs', 'Andre Johnson', 'Chad Johnson'],
+        all_pro: ['Marvin Harrison', 'Reggie Wayne', 'Steve Smith Sr.', 'Torry Holt', 'Josh Gordon'],
+        hall_of_famer: ['T.Y. Hilton'],
+        gronkillion: ['Brandon Lloyd', 'Muhsin Muhammad', 'David Boston']
+      },
+      near: {
+        'Randy Moss': 'Moss never led the league in receiving yards.',
+        'Larry Fitzgerald': 'Fitzgerald never led the league in receiving yards.',
+        'Puka Nacua': "Nacua's 1,715 yards in 2025 ranked second."
+      }
+    },
+    {
+      id: 'wr_super_bowl_mvp', category: 'Wide Receivers', difficulty: 'hard', type: 'player',
+      prompt: 'Name a wide receiver who won Super Bowl MVP.',
+      scope: 'Super Bowls I–LX. Players listed at wide receiver.',
+      tiers: {
+        starter: ['Jerry Rice'],
+        pro_bowler: ['Julian Edelman', 'Cooper Kupp', 'Lynn Swann'],
+        all_pro: ['Hines Ward', 'Desmond Howard', 'Santonio Holmes'],
+        hall_of_famer: ['Deion Branch'],
+        gronkillion: ['Fred Biletnikoff']
+      },
+      near: {
+        'Randy Moss': 'Moss never won a Super Bowl.',
+        'Michael Irvin': 'Irvin won three rings but never the MVP award.'
+      }
+    },
+
+    /* ===== TIGHT ENDS ===== */
+    {
+      id: 'te_hall_of_fame', category: 'Tight Ends', difficulty: 'medium', type: 'player',
+      prompt: 'Name a tight end enshrined in the Pro Football Hall of Fame.',
+      scope: 'Inducted as tight ends, through the Class of 2026.',
+      tiers: {
+        chalk: ['Tony Gonzalez'],
+        starter: ['Shannon Sharpe', 'Mike Ditka', 'Antonio Gates'],
+        pro_bowler: ['Kellen Winslow', 'Ozzie Newsome'],
+        all_pro: ['John Mackey'],
+        hall_of_famer: ['Dave Casper', 'Jackie Smith'],
+        gronkillion: ['Charlie Sanders']
+      },
+      near: {
+        'Rob Gronkowski': 'Gronk first becomes eligible with the Class of 2027.',
+        'Jason Witten': 'Witten was a finalist for the Class of 2026 but was not selected.'
+      }
+    },
+    {
+      id: 'te_six_pro_bowls', category: 'Tight Ends', difficulty: 'hard', type: 'player',
+      prompt: 'Name a tight end selected to at least six Pro Bowls.',
+      scope: 'Pro Bowl selections through the 2025 season.',
+      tiers: {
+        chalk: ['Tony Gonzalez', 'Travis Kelce'],
+        starter: ['Jason Witten', 'George Kittle'],
+        pro_bowler: ['Antonio Gates', 'Shannon Sharpe'],
+        hall_of_famer: ['Charlie Sanders'],
+        gronkillion: ['Steve Jordan']
+      },
+      near: {
+        'Rob Gronkowski': 'Gronk made five Pro Bowls, one short of six.',
+        'Jimmy Graham': 'Graham made five Pro Bowls.',
+        'Mike Ditka': 'Ditka made five Pro Bowls.'
+      }
+    },
+    {
+      id: 'te_10000_yards', category: 'Tight Ends', difficulty: 'medium', type: 'player',
+      prompt: 'Name a tight end with at least 10,000 career receiving yards.',
+      scope: 'Regular-season totals through the 2025 season.',
+      tiers: {
+        chalk: ['Travis Kelce', 'Tony Gonzalez'],
+        starter: ['Jason Witten'],
+        all_pro: ['Antonio Gates'],
+        gronkillion: ['Shannon Sharpe']
+      },
+      near: {
+        'Rob Gronkowski': 'Gronk finished with 9,286 receiving yards.',
+        'Ozzie Newsome': 'Newsome finished with 7,980 receiving yards.'
+      }
+    },
+
+    /* ===== NFL FRANCHISES ===== */
+    {
+      id: 'franchise_never_won', category: 'NFL Franchises', difficulty: 'easy', type: 'team',
+      prompt: 'Name a current NFL franchise that has never won a Super Bowl.',
+      scope: 'Through Super Bowl LX. Earlier cities and names count as the same franchise.',
+      tiers: {
+        chalk: ['Detroit Lions', 'Cleveland Browns', 'Buffalo Bills'],
+        starter: ['Minnesota Vikings', 'Cincinnati Bengals', 'Houston Texans', 'Jacksonville Jaguars'],
+        pro_bowler: ['Atlanta Falcons', 'Carolina Panthers'],
+        all_pro: ['Los Angeles Chargers'],
+        hall_of_famer: ['Tennessee Titans'],
+        gronkillion: ['Arizona Cardinals']
+      },
+      near: {
+        'New York Jets': 'The Jets won Super Bowl III.',
+        'New Orleans Saints': 'The Saints won Super Bowl XLIV.',
+        'Chicago Bears': 'The Bears won Super Bowl XX.'
+      }
+    },
+    {
+      id: 'franchise_lost_never_won', category: 'NFL Franchises', difficulty: 'medium', type: 'team',
+      prompt: 'Name a franchise that has played in a Super Bowl but never won one.',
+      scope: 'Through Super Bowl LX.',
+      tiers: {
+        chalk: ['Buffalo Bills'],
+        starter: ['Minnesota Vikings'],
+        pro_bowler: ['Cincinnati Bengals', 'Atlanta Falcons', 'Carolina Panthers'],
+        all_pro: ['Arizona Cardinals'],
+        hall_of_famer: ['Tennessee Titans'],
+        gronkillion: ['Los Angeles Chargers']
+      },
+      near: {
+        'Detroit Lions': 'The Lions have never reached a Super Bowl.',
+        'Cleveland Browns': 'The Browns have never reached a Super Bowl.',
+        'Houston Texans': 'The Texans have never reached a Super Bowl.',
+        'Jacksonville Jaguars': 'The Jaguars have never reached a Super Bowl.'
+      }
+    },
+    {
+      id: 'franchise_multi_sb', category: 'NFL Franchises', difficulty: 'easy', type: 'team',
+      prompt: 'Name a franchise that has won at least two Super Bowls.',
+      scope: 'Through Super Bowl LX. Titles won in earlier cities count.',
+      tiers: {
+        chalk: ['Pittsburgh Steelers', 'New England Patriots', 'Dallas Cowboys', 'San Francisco 49ers'],
+        starter: ['Green Bay Packers', 'Kansas City Chiefs', 'New York Giants', 'Philadelphia Eagles', 'Seattle Seahawks'],
+        pro_bowler: ['Denver Broncos', 'Tampa Bay Buccaneers', 'Los Angeles Rams', 'Baltimore Ravens'],
+        all_pro: ['Miami Dolphins', 'Las Vegas Raiders'],
+        hall_of_famer: ['Washington Commanders'],
+        gronkillion: ['Indianapolis Colts']
+      },
+      near: {
+        'New York Jets': 'The Jets have one Super Bowl win (III).',
+        'Chicago Bears': 'The Bears have one Super Bowl win (XX).',
+        'New Orleans Saints': 'The Saints have one Super Bowl win (XLIV).'
+      }
+    },
+    {
+      id: 'franchise_afl', category: 'NFL Franchises', difficulty: 'hard', type: 'team',
+      prompt: 'Name a current NFL franchise that played in the AFL (1960–1969).',
+      scope: 'Any AFL season, under any city or team name.',
+      tiers: {
+        chalk: ['New York Jets', 'Kansas City Chiefs'],
+        starter: ['Las Vegas Raiders', 'Buffalo Bills', 'Denver Broncos'],
+        pro_bowler: ['New England Patriots', 'Los Angeles Chargers'],
+        all_pro: ['Miami Dolphins'],
+        hall_of_famer: ['Tennessee Titans'],
+        gronkillion: ['Cincinnati Bengals']
+      },
+      near: {
+        'Pittsburgh Steelers': 'The Steelers moved from the NFL to the AFC in 1970, but never played in the AFL.',
+        'Baltimore Ravens': 'The Ravens began play in 1996.',
+        'Indianapolis Colts': 'The Colts (then in Baltimore) joined the AFC in 1970 from the NFL.',
+        'Cleveland Browns': 'The Browns moved from the NFL to the AFC in 1970.'
+      }
+    },
+
+    /* ===== DEFENSIVE LEGENDS ===== */
+    {
+      id: 'def_dpoy', category: 'Defensive Legends', difficulty: 'medium', type: 'player',
+      prompt: 'Name a player who has won AP Defensive Player of the Year.',
+      scope: '1971–2025 seasons.',
+      tiers: {
+        chalk: ['Aaron Donald', 'J.J. Watt', 'Myles Garrett', 'Lawrence Taylor'],
+        starter: ['Reggie White', 'Ray Lewis', 'T.J. Watt', 'Deion Sanders', 'Ed Reed', 'Troy Polamalu'],
+        pro_bowler: ['Michael Strahan', 'Khalil Mack', 'Nick Bosa', 'Luke Kuechly', 'Brian Urlacher', 'Charles Woodson', 'Bruce Smith', 'Joe Greene', 'Mike Singletary', 'Patrick Surtain II'],
+        all_pro: ['Stephon Gilmore', 'James Harrison', 'Jason Taylor', 'Derrick Brooks', 'Warren Sapp', 'Terrell Suggs', 'Rod Woodson', 'Jack Lambert', 'Mel Blount', 'Alan Page'],
+        hall_of_famer: ['Bob Sanders', 'Cortez Kennedy', 'Lee Roy Selmon', 'Lester Hayes', 'Randy Gradishar', 'Kenny Easley', 'Pat Swilling', 'Harvey Martin'],
+        gronkillion: ['Bryce Paup', 'Dana Stubblefield', 'Keith Millard', 'Doug Betters', 'Dick Anderson']
+      },
+      near: {
+        'Von Miller': 'Von Miller never won Defensive Player of the Year.',
+        'Micah Parsons': 'Parsons has not won Defensive Player of the Year (through 2025).',
+        'Julius Peppers': 'Peppers never won Defensive Player of the Year.',
+        'Dick Butkus': "AP's award began in 1971, and Butkus never won it."
+      }
+    },
+    {
+      id: 'def_20_sack_season', category: 'Defensive Legends', difficulty: 'hard', type: 'player',
+      prompt: 'Name a player with at least 20 sacks in a single season.',
+      scope: 'Official sacks (tracked since 1982), regular season, through 2025.',
+      tiers: {
+        chalk: ['Myles Garrett'],
+        starter: ['T.J. Watt', 'J.J. Watt', 'Aaron Donald', 'Michael Strahan'],
+        pro_bowler: ['Reggie White', 'Lawrence Taylor'],
+        all_pro: ['Jared Allen', 'DeMarcus Ware', 'Derrick Thomas'],
+        hall_of_famer: ['Justin Houston', 'Mark Gastineau'],
+        gronkillion: ['Chris Doleman']
+      },
+      near: {
+        'Bruce Smith': "Bruce Smith's best season was 19 sacks in 1990.",
+        'Deacon Jones': 'Deacon Jones played before sacks became an official stat.',
+        'Shaquil Barrett': 'Barrett had 19.5 sacks in 2019.',
+        'Al Baker': "Al Baker's 23 in 1978 came before sacks were official."
+      }
+    },
+    {
+      id: 'def_150_sacks', category: 'Defensive Legends', difficulty: 'hard', type: 'player',
+      prompt: 'Name a player with at least 150 career sacks.',
+      scope: 'Official sacks (tracked since 1982), regular-season totals.',
+      tiers: {
+        starter: ['Reggie White', 'Bruce Smith'],
+        all_pro: ['Julius Peppers'],
+        hall_of_famer: ['Kevin Greene'],
+        gronkillion: ['Chris Doleman']
+      },
+      near: {
+        'Michael Strahan': 'Strahan finished with 141.5 sacks.',
+        'Deacon Jones': 'Deacon Jones played before sacks became an official stat.',
+        'Lawrence Taylor': 'LT has 132.5 official sacks.',
+        'DeMarcus Ware': 'Ware finished with 138.5 sacks.',
+        'Jason Taylor': 'Jason Taylor finished with 139.5 sacks.'
+      }
+    },
+    {
+      id: 'def_super_bowl_mvp', category: 'Defensive Legends', difficulty: 'hard', type: 'player',
+      prompt: 'Name a defensive player who won Super Bowl MVP.',
+      scope: 'Super Bowls I–LX.',
+      tiers: {
+        chalk: ['Ray Lewis'],
+        starter: ['Von Miller'],
+        pro_bowler: ['Malcolm Smith'],
+        all_pro: ['Richard Dent', 'Dexter Jackson', 'Randy White'],
+        hall_of_famer: ['Larry Brown', 'Harvey Martin'],
+        gronkillion: ['Jake Scott', 'Chuck Howley']
+      },
+      near: {
+        'Desmond Howard': 'Desmond Howard won Super Bowl XXXI MVP as a kick returner, not a defender.',
+        'Lawrence Taylor': 'LT never won Super Bowl MVP.'
+      }
+    },
+
+    /* ===== NFL AWARDS ===== */
+    {
+      id: 'award_mvp', category: 'NFL Awards', difficulty: 'easy', type: 'player',
+      prompt: 'Name a player who has won AP NFL MVP.',
+      scope: '1957–2025 seasons. Co-winners count.',
+      tiers: {
+        chalk: ['Tom Brady', 'Patrick Mahomes', 'Peyton Manning', 'Aaron Rodgers'],
+        starter: ['Lamar Jackson', 'Josh Allen', 'Matthew Stafford', 'Joe Montana', 'Brett Favre', 'John Elway', 'Dan Marino', 'Steve Young', 'Kurt Warner', 'Cam Newton', 'Adrian Peterson', 'Barry Sanders', 'Emmitt Smith', 'LaDainian Tomlinson', 'Jim Brown'],
+        pro_bowler: ['Matt Ryan', 'Shaun Alexander', 'Marshall Faulk', 'Terrell Davis', 'Walter Payton', 'Marcus Allen', 'Lawrence Taylor', 'Johnny Unitas', 'Bart Starr', 'Terry Bradshaw', 'O.J. Simpson', 'Earl Campbell'],
+        all_pro: ['Rich Gannon', 'Steve McNair', 'Boomer Esiason', 'Thurman Thomas', 'Joe Theismann', 'Ken Stabler', 'Fran Tarkenton', 'Paul Hornung', 'Alan Page'],
+        hall_of_famer: ['Ken Anderson', 'Brian Sipe', 'Bert Jones', 'Mark Moseley', 'Y.A. Tittle', 'Norm Van Brocklin', 'Jim Taylor'],
+        gronkillion: ['Earl Morrall', 'Roman Gabriel', 'John Brodie', 'Larry Brown']
+      },
+      near: {
+        'Jerry Rice': 'Jerry Rice never won AP MVP.',
+        'Christian McCaffrey': 'McCaffrey has not won AP MVP.',
+        'Drew Brees': 'Brees never won AP MVP.'
+      }
+    },
+    {
+      id: 'award_mvp_non_qb', category: 'NFL Awards', difficulty: 'hard', type: 'player',
+      prompt: 'Name a non-quarterback who has won AP NFL MVP.',
+      scope: '1957–2025 seasons.',
+      tiers: {
+        chalk: ['Adrian Peterson', 'Barry Sanders'],
+        starter: ['LaDainian Tomlinson', 'Emmitt Smith', 'Jim Brown', 'Walter Payton', 'Lawrence Taylor'],
+        pro_bowler: ['Marshall Faulk', 'Shaun Alexander', 'Terrell Davis', 'Marcus Allen', 'O.J. Simpson', 'Earl Campbell'],
+        all_pro: ['Thurman Thomas', 'Paul Hornung', 'Alan Page'],
+        hall_of_famer: ['Mark Moseley', 'Jim Taylor'],
+        gronkillion: ['Larry Brown']
+      },
+      near: {
+        'Jerry Rice': 'Jerry Rice never won AP MVP.',
+        'Christian McCaffrey': 'McCaffrey has not won AP MVP.',
+        'Derrick Henry': 'Henry has not won AP MVP.',
+        'Saquon Barkley': 'Barkley has not won AP MVP.',
+        'Reggie White': 'Reggie White never won AP MVP.'
+      }
+    },
+    {
+      id: 'award_opoy', category: 'NFL Awards', difficulty: 'medium', type: 'player',
+      prompt: 'Name a player who has won AP Offensive Player of the Year.',
+      scope: '1972–2025 seasons.',
+      tiers: {
+        chalk: ['Tom Brady', 'Patrick Mahomes', 'Peyton Manning', 'Saquon Barkley', 'Christian McCaffrey'],
+        starter: ['Derrick Henry', 'Justin Jefferson', 'Cooper Kupp', 'Jaxon Smith-Njigba', 'Jerry Rice', 'Barry Sanders', 'Drew Brees', 'Adrian Peterson', 'LaDainian Tomlinson', 'Joe Montana'],
+        pro_bowler: ['Michael Thomas', 'Todd Gurley', 'Matt Ryan', 'Cam Newton', 'Marshall Faulk', 'Terrell Davis', 'Brett Favre', 'Steve Young', 'Dan Marino', 'Walter Payton', 'Earl Campbell', 'Eric Dickerson', 'Chris Johnson', 'Shaun Alexander'],
+        all_pro: ['DeMarco Murray', 'Jamal Lewis', 'Priest Holmes', 'Thurman Thomas', 'Warren Moon', 'Marcus Allen', 'Roger Craig', 'O.J. Simpson'],
+        hall_of_famer: ['Dan Fouts', 'Joe Theismann', 'Ken Stabler', 'Fran Tarkenton', 'Ken Anderson'],
+        gronkillion: ['Bert Jones', 'Larry Brown']
+      },
+      near: {
+        'Lamar Jackson': 'Lamar has two MVPs but has not won Offensive Player of the Year.',
+        'Josh Allen': 'Josh Allen has not won Offensive Player of the Year.',
+        'Randy Moss': 'Moss never won Offensive Player of the Year.'
+      }
+    },
+    {
+      id: 'award_oroy', category: 'NFL Awards', difficulty: 'medium', type: 'player',
+      prompt: 'Name a player who won AP Offensive Rookie of the Year from 1990 to 2025.',
+      scope: '1990–2025 seasons.',
+      tiers: {
+        chalk: ['Saquon Barkley', 'Randy Moss', 'Adrian Peterson'],
+        starter: ['Jayden Daniels', 'C.J. Stroud', "Ja'Marr Chase", 'Justin Herbert', 'Odell Beckham Jr.', 'Dak Prescott', 'Emmitt Smith', 'Cam Newton', 'Kyler Murray'],
+        pro_bowler: ['Tetairoa McMillan', 'Garrett Wilson', 'Alvin Kamara', 'Todd Gurley', 'Marshall Faulk', 'Ben Roethlisberger', 'Matt Ryan', 'Robert Griffin III', 'Jerome Bettis', 'Edgerrin James'],
+        all_pro: ['Sam Bradford', 'Vince Young', 'Eddie George', 'Curtis Martin', 'Clinton Portis', 'Anquan Boldin', 'Eddie Lacy', 'Percy Harvin'],
+        hall_of_famer: ['Warrick Dunn', 'Cadillac Williams', 'Mike Anderson', 'Carl Pickens'],
+        gronkillion: ['Anthony Thomas', 'Leonard Russell']
+      },
+      near: {
+        'Justin Jefferson': 'Jefferson never won Offensive Rookie of the Year.',
+        'Puka Nacua': 'Nacua did not win Offensive Rookie of the Year.',
+        'Brock Bowers': 'Bowers did not win Offensive Rookie of the Year.',
+        'Peyton Manning': 'Peyton did not win Offensive Rookie of the Year.',
+        'Barry Sanders': 'Barry won in 1989, one year before this window.'
+      }
+    },
+    {
+      id: 'award_droy', category: 'NFL Awards', difficulty: 'hard', type: 'player',
+      prompt: 'Name a player who won AP Defensive Rookie of the Year from 1990 to 2025.',
+      scope: '1990–2025 seasons.',
+      tiers: {
+        chalk: ['Aaron Donald', 'Micah Parsons', 'Von Miller'],
+        starter: ['Nick Bosa', 'Joey Bosa', 'Luke Kuechly', 'Charles Woodson', 'Sauce Gardner', 'Brian Urlacher', 'Julius Peppers'],
+        pro_bowler: ['Patrick Willis', 'Ndamukong Suh', 'Terrell Suggs', 'Chase Young', 'Will Anderson Jr.', 'Marcus Peters', 'Jared Verse', 'Marshon Lattimore', 'Darius Leonard'],
+        all_pro: ['Carson Schwesinger', 'Jevon Kearse', 'Shawne Merriman', 'DeMeco Ryans', 'Jerod Mayo', 'Sheldon Richardson', 'Simeon Rice', 'Jonathan Vilma', 'Brian Cushing'],
+        hall_of_famer: ['Dana Stubblefield', 'Hugh Douglas', 'Peter Boulware', 'Kendrell Bell', 'Mark Carrier'],
+        gronkillion: ['Mike Croel', 'Tim Bowens', 'Dale Carter']
+      },
+      near: {
+        'Lawrence Taylor': 'LT won in 1981, before this window.',
+        'Derrick Thomas': 'Derrick Thomas won in 1989, one year before this window.',
+        'Myles Garrett': 'Garrett did not win Defensive Rookie of the Year.',
+        'Ed Reed': 'Ed Reed did not win Defensive Rookie of the Year.'
+      }
+    },
+
+    /* ===== NFL DRAFT ===== */
+    {
+      id: 'draft_qb_first_overall', category: 'NFL Draft', difficulty: 'medium', type: 'player',
+      prompt: 'Name a quarterback drafted first overall since 1967.',
+      scope: 'NFL Drafts 1967–2026. Supplemental drafts don\'t count.',
+      tiers: {
+        chalk: ['Peyton Manning', 'Joe Burrow', 'John Elway'],
+        starter: ['Trevor Lawrence', 'Caleb Williams', 'Baker Mayfield', 'Kyler Murray', 'Andrew Luck', 'Cam Newton', 'Troy Aikman', 'Eli Manning', 'Matthew Stafford'],
+        pro_bowler: ['Jared Goff', 'Bryce Young', 'Cam Ward', 'Fernando Mendoza', 'Jameis Winston', 'Michael Vick', 'Terry Bradshaw'],
+        all_pro: ['Drew Bledsoe', 'Carson Palmer', 'Alex Smith', 'JaMarcus Russell', 'Sam Bradford'],
+        hall_of_famer: ['Tim Couch', 'David Carr', 'Vinny Testaverde', 'Jim Plunkett'],
+        gronkillion: ['Jeff George', 'Steve Bartkowski']
+      },
+      near: {
+        'Tom Brady': 'Brady went 199th overall in 2000.',
+        'Steve Young': 'Young went first in the 1984 supplemental draft, which doesn\'t count here.',
+        'Patrick Mahomes': 'Mahomes went 10th overall in 2017.',
+        'Josh Allen': 'Josh Allen went 7th overall in 2018.',
+        'Dan Marino': 'Marino went 27th overall in 1983.',
+        'Aaron Rodgers': 'Rodgers went 24th overall in 2005.'
+      }
+    },
+    {
+      id: 'draft_non_qb_first_overall', category: 'NFL Draft', difficulty: 'hard', type: 'player',
+      prompt: 'Name a non-quarterback drafted first overall since 1967.',
+      scope: 'NFL Drafts 1967–2026.',
+      tiers: {
+        chalk: ['Myles Garrett'],
+        starter: ['Bo Jackson', 'Bruce Smith', 'Earl Campbell', 'O.J. Simpson'],
+        pro_bowler: ['Jadeveon Clowney', 'Orlando Pace', 'Keyshawn Johnson', 'Lee Roy Selmon', 'Mario Williams', 'Travon Walker'],
+        all_pro: ['Ed "Too Tall" Jones', 'Bubba Smith', 'Jake Long', 'Eric Fisher', 'Irving Fryar', 'Ki-Jana Carter', 'Courtney Brown', 'Billy Sims'],
+        hall_of_famer: ['Ron Yary', 'George Rogers', 'Russell Maryland', 'Steve Emtman', 'Dan Wilkinson', 'Ricky Bell'],
+        gronkillion: ['Walt Patulski', 'John Matuszak', 'Tom Cousineau', 'Kenneth Sims', 'Aundray Bruce']
+      },
+      near: {
+        'Reggie Bush': 'Bush went second overall in 2006.',
+        'Chuck Bednarik': 'Bednarik went first in 1949, before this window.',
+        'Barry Sanders': 'Barry Sanders went third overall in 1989.',
+        'Lawrence Taylor': 'LT went second overall in 1981.'
+      }
+    },
+    {
+      id: 'draft_heisman_first_overall', category: 'NFL Draft', difficulty: 'hard', type: 'player',
+      prompt: 'Name a Heisman Trophy winner who was drafted first overall since 1967.',
+      scope: 'NFL Drafts 1967–2026.',
+      tiers: {
+        chalk: ['Joe Burrow'],
+        starter: ['Baker Mayfield', 'Kyler Murray', 'Caleb Williams', 'Cam Newton', 'Bo Jackson'],
+        pro_bowler: ['Bryce Young', 'Fernando Mendoza', 'Earl Campbell', 'Jameis Winston', 'O.J. Simpson'],
+        all_pro: ['Carson Palmer', 'Sam Bradford', 'Vinny Testaverde', 'Jim Plunkett'],
+        hall_of_famer: ['Billy Sims'],
+        gronkillion: ['George Rogers']
+      },
+      near: {
+        'Travis Hunter': 'Hunter went second overall in 2025.',
+        'Jayden Daniels': 'Daniels went second overall in 2024.',
+        'Barry Sanders': 'Barry Sanders went third overall in 1989.',
+        'Lamar Jackson': 'Lamar went 32nd overall in 2018.',
+        'Tim Tebow': 'Tebow went 25th overall in 2010.',
+        'Johnny Manziel': 'Manziel went 22nd overall in 2014.'
+      }
+    },
+    {
+      id: 'draft_host_cities', category: 'NFL Draft', difficulty: 'medium', type: 'custom',
+      prompt: 'Name a city that hosted the NFL Draft in person from 2015 through 2026.',
+      scope: 'In-person drafts, 2015–2026. The 2020 draft was held virtually.',
+      entities: {
+        'Pittsburgh': ['Pittsburgh PA', 'Pittsburgh Pennsylvania'],
+        'Green Bay': ['Green Bay WI', 'Green Bay Wisconsin'],
+        'Detroit': ['Detroit MI', 'Detroit Michigan', 'Motor City'],
+        'Las Vegas': ['Vegas', 'Las Vegas NV', 'Sin City'],
+        'Kansas City': ['KC', 'Kansas City MO', 'Kansas City Missouri'],
+        'Nashville': ['Nashville TN', 'Nashville Tennessee', 'Music City'],
+        'Philadelphia': ['Philly', 'Philadelphia PA'],
+        'Chicago': ['Chicago IL', 'Chi-Town', 'Windy City'],
+        'Cleveland': ['Cleveland OH', 'Cleveland Ohio'],
+        'Arlington': ['Arlington Texas', 'Arlington TX', 'Dallas', 'Dallas-Fort Worth', 'DFW', 'AT&T Stadium']
+      },
+      decoys: {
+        'New York': { aliases: ['NYC', 'New York City', 'Radio City', 'Radio City Music Hall', 'Manhattan'], note: 'New York hosted every draft through 2014.' }
+      },
+      tiers: {
+        starter: ['Pittsburgh', 'Green Bay', 'Detroit'],
+        pro_bowler: ['Las Vegas', 'Kansas City', 'Nashville'],
+        all_pro: ['Philadelphia', 'Chicago'],
+        hall_of_famer: ['Arlington'],
+        gronkillion: ['Cleveland']
+      }
+    },
+
+    /* ===== NFL RECORDS ===== */
+    {
+      id: 'record_5000_season', category: 'NFL Records', difficulty: 'medium', type: 'player',
+      prompt: 'Name a quarterback who passed for at least 5,000 yards in a single season.',
+      scope: 'Regular season, through the 2025 season.',
+      tiers: {
+        chalk: ['Drew Brees', 'Tom Brady', 'Patrick Mahomes'],
+        starter: ['Peyton Manning'],
+        pro_bowler: ['Dan Marino'],
+        all_pro: ['Ben Roethlisberger', 'Justin Herbert', 'Matthew Stafford'],
+        gronkillion: ['Jameis Winston']
+      },
+      near: {
+        'Joe Burrow': "Burrow's best season was 4,918 yards in 2024.",
+        'Aaron Rodgers': "Rodgers' best season was 4,643 yards in 2011."
+      }
+    },
+    {
+      id: 'record_60000_career', category: 'NFL Records', difficulty: 'hard', type: 'player',
+      prompt: 'Name a quarterback with at least 60,000 career passing yards.',
+      scope: 'Regular-season totals through the 2025 season.',
+      tiers: {
+        chalk: ['Tom Brady', 'Drew Brees', 'Peyton Manning'],
+        starter: ['Brett Favre', 'Aaron Rodgers'],
+        pro_bowler: ['Dan Marino', 'Ben Roethlisberger', 'Matthew Stafford'],
+        all_pro: ['Philip Rivers'],
+        gronkillion: ['Matt Ryan']
+      },
+      near: {
+        'Eli Manning': 'Eli finished with 57,023 passing yards.',
+        'John Elway': 'Elway finished with 51,475 passing yards.'
+      }
+    },
+    {
+      id: 'record_15000_rec_yards', category: 'NFL Records', difficulty: 'hard', type: 'player',
+      prompt: 'Name a player with at least 15,000 career receiving yards.',
+      scope: 'Regular-season totals through the 2025 season.',
+      tiers: {
+        chalk: ['Jerry Rice'],
+        starter: ['Larry Fitzgerald', 'Randy Moss', 'Terrell Owens'],
+        all_pro: ['Tony Gonzalez'],
+        gronkillion: ['Isaac Bruce']
+      },
+      near: {
+        'Tim Brown': 'Tim Brown finished with 14,934 receiving yards.',
+        'Steve Smith Sr.': 'Steve Smith Sr. finished with 14,731 receiving yards.',
+        'Marvin Harrison': 'Marvin Harrison finished with 14,580 receiving yards.'
+      }
+    },
+
+    /* ===== STADIUMS ===== */
+    {
+      id: 'stadium_sb_host', category: 'Stadiums', difficulty: 'medium', type: 'venue',
+      prompt: 'Name a stadium that has hosted a Super Bowl.',
+      scope: 'Super Bowls I–LX. Any official name the venue has had counts.',
+      tiers: {
+        chalk: ['superdome', 'hard_rock'],
+        starter: ['rose_bowl', 'orange_bowl', 'levis', 'state_farm', 'raymond_james', 'sofi', 'allegiant', 'mb_stadium', 'att', 'metlife'],
+        pro_bowler: ['nrg', 'us_bank', 'lucas_oil', 'ford_field', 'coliseum', 'qualcomm', 'georgia_dome'],
+        all_pro: ['sun_devil', 'silverdome', 'metrodome', 'tampa_stadium', 'stanford', 'tulane'],
+        hall_of_famer: ['alltel'],
+        gronkillion: ['rice_stadium']
+      }
+    },
+    {
+      id: 'stadium_three_sb', category: 'Stadiums', difficulty: 'hard', type: 'venue',
+      prompt: 'Name a stadium that has hosted at least three Super Bowls.',
+      scope: 'Super Bowls I–LX. Any official name the venue has had counts.',
+      tiers: {
+        chalk: ['superdome'],
+        starter: ['hard_rock'],
+        pro_bowler: ['rose_bowl', 'orange_bowl'],
+        all_pro: ['raymond_james', 'state_farm'],
+        hall_of_famer: ['qualcomm'],
+        gronkillion: ['tulane']
+      },
+      near: {
+        levis: "Levi's Stadium has hosted two (50 and LX).",
+        coliseum: 'The Coliseum has hosted two (I and VII).',
+        georgia_dome: 'The Georgia Dome hosted two (XXVIII and XXXIV).',
+        nrg: 'NRG Stadium has hosted two (XXXVIII and LI).',
+        tampa_stadium: 'Tampa Stadium hosted two (XVIII and XXV).',
+        sofi: 'SoFi Stadium has hosted one (LVI).'
+      }
+    },
+
+    /* ===== NFL PLAYOFFS ===== */
+    {
+      id: 'playoff_qb_10_wins', category: 'NFL Playoffs', difficulty: 'medium', type: 'player',
+      prompt: 'Name a quarterback with at least 10 career playoff wins as a starter.',
+      scope: 'Through the 2025 postseason (Super Bowl LX).',
+      tiers: {
+        chalk: ['Tom Brady', 'Patrick Mahomes', 'Joe Montana'],
+        starter: ['Peyton Manning', 'John Elway', 'Terry Bradshaw', 'Brett Favre', 'Aaron Rodgers'],
+        pro_bowler: ['Ben Roethlisberger', 'Troy Aikman'],
+        hall_of_famer: ['Roger Staubach'],
+        gronkillion: ['Joe Flacco']
+      },
+      near: {
+        'Drew Brees': 'Brees went 9–9 in the playoffs.',
+        'Bart Starr': 'Starr went 9–1 in the playoffs, one win short.',
+        'Kurt Warner': 'Warner went 9–4 in the playoffs.',
+        'Russell Wilson': 'Wilson has nine playoff wins.',
+        'Jim Kelly': 'Kelly went 9–8 in the playoffs.',
+        'Eli Manning': 'Eli went 8–4 in the playoffs.'
+      }
+    },
+    {
+      id: 'playoff_sb_losing_coach', category: 'NFL Playoffs', difficulty: 'hard', type: 'player',
+      prompt: 'Name a head coach who lost a Super Bowl and has never won one.',
+      scope: 'Super Bowls I–LX.',
+      tiers: {
+        chalk: ['Kyle Shanahan', 'Marv Levy'],
+        starter: ['Mike Vrabel', 'Bud Grant', 'Zac Taylor', 'Jim Harbaugh', 'Dan Reeves'],
+        pro_bowler: ['John Fox', 'Ron Rivera', 'Dan Quinn', 'Lovie Smith', 'Jeff Fisher'],
+        all_pro: ['Jim Caldwell', 'Ken Whisenhunt', 'Mike Martz', 'Bill Callahan'],
+        hall_of_famer: ['Jim Fassel', 'Bobby Ross', 'Sam Wyche', 'George Allen'],
+        gronkillion: ['Raymond Berry', 'Forrest Gregg', 'Ray Malavasi', 'Red Miller', 'John Rauch']
+      },
+      near: {
+        'Andy Reid': 'Reid lost Super Bowl XXXIX but has since won three.',
+        'Sean McVay': 'McVay lost Super Bowl LIII but won Super Bowl LVI.',
+        'Nick Sirianni': 'Sirianni lost Super Bowl LVII but won Super Bowl LIX.',
+        'Bill Belichick': 'Belichick won six Super Bowls as a head coach.',
+        'Marty Schottenheimer': 'Schottenheimer never reached a Super Bowl.'
+      }
+    },
+    {
+      id: 'playoff_wild_card_champs', category: 'NFL Playoffs', difficulty: 'hard', type: 'team',
+      prompt: 'Name a franchise that won a Super Bowl as a wild-card team.',
+      scope: 'Since the 1970 merger, through Super Bowl LX.',
+      tiers: {
+        starter: ['New York Giants', 'Green Bay Packers', 'Tampa Bay Buccaneers'],
+        pro_bowler: ['Pittsburgh Steelers'],
+        all_pro: ['Baltimore Ravens'],
+        hall_of_famer: ['Denver Broncos'],
+        gronkillion: ['Las Vegas Raiders']
+      },
+      near: {
+        'New England Patriots': 'All six Patriots titles came as division winners.',
+        'Seattle Seahawks': 'Both Seahawks titles came as division winners.',
+        'Kansas City Chiefs': 'Every Chiefs title since the merger came as a division winner.'
+      }
+    }
+  ]
+};
+
+
+/* ==========================================================================
+   GRONKILLION — game engine
+   Sections follow the build brief:
+     1 Configuration        3 Answer normalization   4 Answer validation
+     5 Game state & flow    6 Timer engine           7 Scoring
+     8 Football field       9 Screen rendering      10 Question selection
+    11 Local storage       12 Sound                 13 Sharing
+    14 Events & startup
+   (2, the question database, lives in GRONK_DATA above.)
+   State machine: HOME → (KICKOFF) → PREVIEW → ANSWERING → REVEAL → PREVIEW … → RESULTS
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  /* ======================================================================
+     1. CONFIGURATION
+     ====================================================================== */
+  const CONFIG = Object.freeze({
+    ROUNDS: 7,
+    PREVIEW_MS: 3000,
+    ANSWER_MS: 25000,
+    WARN_SECONDS: 10,
+    DANGER_SECONDS: 5,
+    MAX_SCORE: 700,
+    STORAGE_PREFIX: 'gronkillion:v1:',
+    DAILY_SALT: 'gronkillion-daily-v1',
+    RECENT_MEMORY: 21,
+    SUBMIT_DEBOUNCE_MS: 280,
+    NEXT_GUARD_MS: 450,
+    CONFIRM_FLASH_MS: 380,
+    KICKOFF_MS: 1150,
+    RESUME_MAX_AGE_MS: 24 * 60 * 60 * 1000
+  });
+
+  const TIERS = Object.freeze({
+    chalk:         { key: 'chalk',         label: 'Chalk Pick',    points: 10,  glyph: '●',   emoji: '⬜', order: 1, desc: 'Extremely obvious answer' },
+    starter:       { key: 'starter',       label: 'Starter',       points: 15,  glyph: '◆',   emoji: '🟦', order: 2, desc: 'Commonly known answer' },
+    pro_bowler:    { key: 'pro_bowler',    label: 'Pro Bowler',    points: 30,  glyph: '★',   emoji: '🟩', order: 3, desc: 'Good football knowledge' },
+    all_pro:       { key: 'all_pro',       label: 'All-Pro',       points: 60,  glyph: '★★',  emoji: '🟧', order: 4, desc: 'Uncommon, impressive answer' },
+    hall_of_famer: { key: 'hall_of_famer', label: 'Hall of Famer', points: 85,  glyph: '★★★', emoji: '🟪', order: 5, desc: 'Very obscure answer' },
+    gronkillion:   { key: 'gronkillion',   label: 'GRONKILLION',   points: 100, glyph: '♛',   emoji: '🟨', order: 6, desc: 'Extremely rare, legendary answer' }
+  });
+  const TIER_ORDER = ['chalk', 'starter', 'pro_bowler', 'all_pro', 'hall_of_famer', 'gronkillion'];
+
+  const RANKS = [
+    { min: 0,   key: 'practice', label: 'Practice Squad',     msg: 'Rough day at the office. Hit the film room and run it back.' },
+    { min: 100, key: 'rookie',   label: 'Rookie',             msg: 'Flashes of real talent. The coaching staff noticed.' },
+    { min: 200, key: 'starter',  label: 'Starter',            msg: 'Solid drive. You earned your spot on the depth chart.' },
+    { min: 300, key: 'probowl',  label: 'Pro Bowler',         msg: 'A Pro Bowl résumé. The fans voted you in.' },
+    { min: 400, key: 'allpro',   label: 'All-Pro',            msg: 'That was an All-Pro performance.' },
+    { min: 500, key: 'hof',      label: 'Hall of Famer',      msg: "You're headed to the Hall of Fame!" },
+    { min: 600, key: 'legend',   label: 'GRONKILLION LEGEND', msg: 'An absolutely legendary seven-play drive.' }
+  ];
+
+  const ZONES = [
+    { min: 0,   key: 'opening',  label: 'Opening Drive' },
+    { min: 25,  key: 'chains',   label: 'Moving the Chains' },
+    { min: 50,  key: 'midfield', label: 'Across Midfield' },
+    { min: 80,  key: 'redzone',  label: 'Red Zone' },
+    { min: 95,  key: 'goalline', label: 'Goal Line' },
+    { min: 100, key: 'td',       label: 'TOUCHDOWN' }
+  ];
+
+  const FLAVOR = {
+    chalk: ['Chalk pick. Everybody had that one.', 'The safe read. It still moves the chains.', 'Obvious, but it counts.'],
+    starter: ['Solid gain.', 'Good read. Keep the drive alive.', 'A starter-level answer.'],
+    pro_bowler: ['Big gain! Pro Bowl knowledge.', "Now we're talking.", "That's a Pro Bowl read."],
+    all_pro: ['Explosive play! All-Pro answer.', 'Huge chunk play!', 'Film-room grinders know that one.'],
+    hall_of_famer: ['What a deep cut!', 'Canton-level knowledge.', 'Few fans would pull that one.'],
+    gronkillion: ['GRONKILLION! A legendary answer.', 'One in a GRONKILLION!', 'Absolutely legendary.'],
+    timeout: ['The play clock beat you.', 'Delay of game. No gain on the play.'],
+    skipped: ['Punt formation. No gain on the play.', 'You took a knee on this one.']
+  };
+
+  /* ---------- small helpers ---------- */
+  const first = (set) => set.values().next().value;
+  const pick = (list) => list[Math.floor(Math.random() * list.length)];
+  const escapeHTML = (value) => String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const prefersReducedMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const titleCase = (s) => s.replace(/\b[a-z]/g, (c) => c.toUpperCase());
+
+  /* ======================================================================
+     11. LOCAL STORAGE (versioned keys, validated reads, in-memory fallback)
+     ====================================================================== */
+  const Store = (() => {
+    const memory = new Map();
+    let available = false;
+    try {
+      const probe = CONFIG.STORAGE_PREFIX + '__probe';
+      window.localStorage.setItem(probe, '1');
+      window.localStorage.removeItem(probe);
+      available = true;
+    } catch (err) {
+      available = false;
+    }
+    const fullKey = (key) => CONFIG.STORAGE_PREFIX + key;
+    function readRaw(key) {
+      if (available) {
+        try { return window.localStorage.getItem(fullKey(key)); } catch (err) { /* fall back to memory */ }
+      }
+      return memory.has(key) ? memory.get(key) : null;
+    }
+    return {
+      get available() { return available; },
+      get(key, fallback, validate) {
+        const raw = readRaw(key);
+        if (raw == null) return fallback;
+        try {
+          const value = JSON.parse(raw);
+          return (!validate || validate(value)) ? value : fallback;
+        } catch (err) {
+          return fallback; // corrupted entry
+        }
+      },
+      set(key, value) {
+        let raw;
+        try { raw = JSON.stringify(value); } catch (err) { return false; }
+        memory.set(key, raw);
+        if (!available) return false;
+        try { window.localStorage.setItem(fullKey(key), raw); return true; } catch (err) { return false; }
+      },
+      remove(key) {
+        memory.delete(key);
+        if (available) { try { window.localStorage.removeItem(fullKey(key)); } catch (err) { /* ignore */ } }
+      }
+    };
+  })();
+
+  const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+  const isNum = (v) => typeof v === 'number' && isFinite(v);
+  const validPlays = (arr) => Array.isArray(arr) && arr.length <= CONFIG.ROUNDS &&
+    arr.every((p) => p === null || (isObj(p) && typeof p.qid === 'string' && isNum(p.points) && p.points >= 0 && p.points <= 100 &&
+      (p.points === 0 || TIERS[p.rarity])));
+  const validStats = (v) => isObj(v) && isNum(v.gamesPlayed) && isNum(v.unlimitedHigh);
+  const validSettings = (v) => isObj(v) && typeof v.sound === 'boolean';
+  const validDaily = (v) => isObj(v) && typeof v.date === 'string' && isNum(v.score) && Array.isArray(v.qids) && validPlays(v.plays);
+  const validRecent = (v) => Array.isArray(v) && v.every((x) => typeof x === 'string');
+  const validProgress = (v) => isObj(v) && (v.mode === 'daily' || v.mode === 'unlimited') && Array.isArray(v.qids) &&
+    v.qids.length === CONFIG.ROUNDS && isNum(v.round) && v.round >= 0 && v.round < CONFIG.ROUNDS && validPlays(v.plays) && isNum(v.savedAt);
+
+  const defaultStats = () => ({ gamesPlayed: 0, unlimitedHigh: 0, unlimitedGames: 0, dailyGames: 0, bestTier: null });
+  const loadStats = () => Object.assign(defaultStats(), Store.get('stats', null, validStats) || {});
+  const loadDailyRecord = () => Store.get('daily', null, validDaily);
+
+  /* ======================================================================
+     3. ANSWER NORMALIZATION
+     ====================================================================== */
+  const SUFFIXES = new Set(['jr', 'sr', 'ii', 'iii', 'iv']);
+  const PARTICLES = new Set(['st', 'van', 'von', 'de', 'da', 'di', 'du', 'le', 'la', 'del']);
+
+  /** Lower-case, strip accents/apostrophes/punctuation, collapse whitespace,
+   *  merge initials ("J. J. Watt" → "jj watt") and drop a leading "the". */
+  function normalize(input) {
+    let s = String(input == null ? '' : input);
+    if (s.normalize) s = s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+    s = s.toLowerCase()
+      .replace(/[‘’‚‛′ʼ`´']/g, '')
+      .replace(/&/g, '')
+      .replace(/\./g, ' ')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+    if (!s) return '';
+    const out = [];
+    const single = [];
+    s.split(' ').forEach((token) => {
+      const isSingle = token.length === 1 && token >= 'a' && token <= 'z';
+      if (isSingle && out.length && single[single.length - 1]) {
+        out[out.length - 1] += token;
+      } else {
+        out.push(token);
+        single.push(isSingle);
+      }
+    });
+    if (out.length > 1 && out[0] === 'the') out.shift();
+    return out.join(' ');
+  }
+
+  /** "kenneth walker iii" → "kenneth walker" (keeps at least two words). */
+  function stripSuffix(n) {
+    const parts = n.split(' ');
+    while (parts.length > 2 && SUFFIXES.has(parts[parts.length - 1])) parts.pop();
+    return parts.join(' ');
+  }
+
+  /** Surname keys for a display name, e.g. "Amon-Ra St. Brown" → ["st brown", "stbrown"]. */
+  function surnameKeys(name) {
+    const words = String(name).replace(/["“”]/g, ' ').trim().split(/\s+/);
+    while (words.length > 2 && SUFFIXES.has(normalize(words[words.length - 1]))) words.pop();
+    if (words.length < 2) return [];
+    let last = words[words.length - 1];
+    if (words.length >= 3 && PARTICLES.has(normalize(words[words.length - 2]))) last = words[words.length - 2] + ' ' + last;
+    const key = normalize(last);
+    if (!key) return [];
+    return key.includes(' ') ? [key, key.replace(/ /g, '')] : [key];
+  }
+
+  /** Optimal-string-alignment (Damerau–Levenshtein) distance with early exit. */
+  function osa(a, b, max) {
+    const la = a.length;
+    const lb = b.length;
+    if (Math.abs(la - lb) > max) return max + 1;
+    if (!la || !lb) return Math.max(la, lb);
+    let p2 = new Array(lb + 1).fill(0);
+    let p1 = new Array(lb + 1);
+    let cur = new Array(lb + 1);
+    for (let j = 0; j <= lb; j++) p1[j] = j;
+    for (let i = 1; i <= la; i++) {
+      cur[0] = i;
+      let rowMin = i;
+      const ai = a.charCodeAt(i - 1);
+      for (let j = 1; j <= lb; j++) {
+        const bj = b.charCodeAt(j - 1);
+        let v = p1[j - 1] + (ai === bj ? 0 : 1);
+        if (p1[j] + 1 < v) v = p1[j] + 1;
+        if (cur[j - 1] + 1 < v) v = cur[j - 1] + 1;
+        if (i > 1 && j > 1 && ai === b.charCodeAt(j - 2) && a.charCodeAt(i - 2) === bj && p2[j - 2] + 1 < v) v = p2[j - 2] + 1;
+        cur[j] = v;
+        if (v < rowMin) rowMin = v;
+      }
+      if (rowMin > max) return max + 1;
+      const t = p2; p2 = p1; p1 = cur; cur = t;
+    }
+    return p1[lb];
+  }
+
+  // Conservative typo tolerance: none for short keys, one edit for 6+ chars, two for 12+.
+  const typoAllowance = (len) => (len >= 12 ? 2 : len >= 6 ? 1 : 0);
+  const teamAllowance = (len) => (len >= 10 ? 2 : len >= 5 ? 1 : 0);
+
+  /* ======================================================================
+     2b. QUESTION DATABASE — compile registries and runtime questions
+     ====================================================================== */
+  const addKey = (map, key, id) => {
+    if (!key) return;
+    let set = map.get(key);
+    if (!set) { set = new Set(); map.set(key, set); }
+    set.add(id);
+  };
+
+  // Players: every name that appears anywhere becomes a known entity.
+  const PLAYERS = new Map();
+  function ensurePlayer(name) {
+    let p = PLAYERS.get(name);
+    if (!p) {
+      const full = normalize(name);
+      p = { id: name, name, full, base: stripSuffix(full), aliases: [], surnames: surnameKeys(name) };
+      PLAYERS.set(name, p);
+    }
+    return p;
+  }
+  GRONK_DATA.questions.forEach((src) => {
+    if (src.type !== 'player') return;
+    TIER_ORDER.forEach((tier) => (src.tiers[tier] || []).forEach(ensurePlayer));
+    Object.keys(src.near || {}).forEach(ensurePlayer);
+  });
+  GRONK_DATA.extraPlayers.forEach(ensurePlayer);
+  Object.keys(GRONK_DATA.playerAliases).forEach((name) => {
+    const p = ensurePlayer(name);
+    GRONK_DATA.playerAliases[name].forEach((alias) => p.aliases.push(alias));
+  });
+
+  const P_FULL = new Map();
+  const P_ALIAS = new Map();
+  const P_SURNAME = new Map();
+  PLAYERS.forEach((p) => addKey(P_FULL, p.full, p.id));
+  PLAYERS.forEach((p) => { if (p.base !== p.full && !P_FULL.has(p.base)) addKey(P_FULL, p.base, p.id); });
+  PLAYERS.forEach((p) => p.aliases.forEach((alias) => {
+    const key = normalize(alias);
+    addKey(P_ALIAS, key, p.id);
+    const base = stripSuffix(key);
+    if (base !== key) addKey(P_ALIAS, base, p.id);
+  }));
+  PLAYERS.forEach((p) => p.surnames.forEach((s) => addKey(P_SURNAME, s, p.id)));
+  const P_FUZZY = [];
+  P_FULL.forEach((ids, key) => { if (ids.size === 1 && key.length >= 6) P_FUZZY.push([key, first(ids)]); });
+  P_ALIAS.forEach((ids, key) => { if (ids.size === 1 && key.length >= 8 && !P_FULL.has(key)) P_FUZZY.push([key, first(ids)]); });
+  const P_SURNAME_FUZZY = [];
+  P_SURNAME.forEach((ids, key) => { if (key.length >= 7 && !key.includes(' ')) P_SURNAME_FUZZY.push([key, key]); });
+
+  // Teams
+  const TEAMS = new Map();
+  const T_INDEX = new Map();
+  const T_BY_NAME = new Map();
+  Object.keys(GRONK_DATA.teams).forEach((code) => {
+    const t = GRONK_DATA.teams[code];
+    TEAMS.set(code, { id: code, name: t.name });
+    T_BY_NAME.set(t.name, code);
+    [t.name, code].concat(t.aliases).forEach((alias) => addKey(T_INDEX, normalize(alias), code));
+  });
+  Object.keys(GRONK_DATA.teamAmbiguous).forEach((label) => GRONK_DATA.teamAmbiguous[label].forEach((code) => addKey(T_INDEX, normalize(label), code)));
+  const T_FUZZY = [];
+  T_INDEX.forEach((ids, key) => { if (ids.size === 1 && key.length >= 5) T_FUZZY.push([key, first(ids)]); });
+
+  // Venues
+  const VENUES = new Map();
+  const V_INDEX = new Map();
+  Object.keys(GRONK_DATA.venues).forEach((id) => {
+    const v = GRONK_DATA.venues[id];
+    VENUES.set(id, { id, name: v.name, display: v.display || v.name, host: v.host !== false });
+    [v.name, v.display || v.name].concat(v.aliases || []).forEach((alias) => addKey(V_INDEX, normalize(alias), id));
+  });
+  Object.keys(GRONK_DATA.venueAmbiguous).forEach((label) => GRONK_DATA.venueAmbiguous[label].forEach((id) => addKey(V_INDEX, normalize(label), id)));
+  const V_FUZZY = [];
+  V_INDEX.forEach((ids, key) => { if (ids.size === 1 && key.length >= 6) V_FUZZY.push([key, first(ids)]); });
+
+  function buildCustom(src) {
+    const index = new Map();
+    const names = new Map();
+    const ids = new Map();
+    const near = {};
+    const add = (name, aliases) => {
+      const id = 'c:' + name;
+      ids.set(name, id);
+      names.set(id, name);
+      [name].concat(aliases).forEach((alias) => addKey(index, normalize(alias), id));
+      return id;
+    };
+    Object.keys(src.entities || {}).forEach((name) => add(name, src.entities[name]));
+    Object.keys(src.decoys || {}).forEach((name) => {
+      const d = src.decoys[name];
+      const id = add(name, d.aliases || []);
+      if (d.note) near[id] = d.note;
+    });
+    const fuzzy = [];
+    index.forEach((set, key) => { if (set.size === 1 && key.length >= 6) fuzzy.push([key, first(set)]); });
+    return { index, names, ids, near, fuzzy, entities: src.entities || {} };
+  }
+
+  function resolveRef(src, ref, custom) {
+    switch (src.type) {
+      case 'player': return PLAYERS.has(ref) ? ref : null;
+      case 'team': return T_BY_NAME.get(ref) || (TEAMS.has(ref) ? ref : null);
+      case 'venue': return VENUES.has(ref) ? ref : null;
+      case 'custom': return custom.ids.get(ref) || null;
+      default: return null;
+    }
+  }
+  function entityName(type, id, custom) {
+    switch (type) {
+      case 'player': return PLAYERS.get(id).name;
+      case 'team': return TEAMS.get(id).name;
+      case 'venue': return VENUES.get(id).display;
+      case 'custom': return custom.names.get(id);
+      default: return String(id);
+    }
+  }
+  function entityAliases(type, id, custom) {
+    switch (type) {
+      case 'player': return PLAYERS.get(id).aliases.slice();
+      case 'team': return GRONK_DATA.teams[id].aliases.slice();
+      case 'venue': return (GRONK_DATA.venues[id].aliases || []).slice();
+      case 'custom': return (custom.entities[custom.names.get(id)] || []).slice();
+      default: return [];
+    }
+  }
+
+  function buildQuestion(src) {
+    const custom = src.type === 'custom' ? buildCustom(src) : null;
+    const answers = [];
+    TIER_ORDER.forEach((tier) => (src.tiers[tier] || []).forEach((ref) => {
+      const entityId = resolveRef(src, ref, custom);
+      if (!entityId) { console.warn('[GRONKILLION] Unknown answer in ' + src.id + ':', ref); return; }
+      if (answers.some((a) => a.entityId === entityId)) { console.warn('[GRONKILLION] Duplicate answer in ' + src.id + ':', ref); return; }
+      answers.push({
+        canonical: entityName(src.type, entityId, custom),
+        aliases: entityAliases(src.type, entityId, custom),
+        rarity: tier,
+        points: TIERS[tier].points,
+        entityId
+      });
+    }));
+    const byEntity = new Map(answers.map((a) => [a.entityId, a]));
+    const near = custom ? Object.assign({}, custom.near) : {};
+    Object.keys(src.near || {}).forEach((ref) => {
+      const id = resolveRef(src, ref, custom);
+      if (!id) { console.warn('[GRONKILLION] Unknown near-miss in ' + src.id + ':', ref); return; }
+      if (byEntity.has(id)) { console.warn('[GRONKILLION] Near-miss note on a qualifying answer in ' + src.id + ':', ref); return; }
+      near[id] = src.near[ref];
+    });
+    return {
+      id: src.id,
+      category: src.category,
+      difficulty: src.difficulty || 'medium',
+      type: src.type,
+      prompt: src.prompt,
+      scope: src.scope,
+      answers,
+      byEntity,
+      near,
+      custom
+    };
+  }
+
+  const QUESTIONS = GRONK_DATA.questions.map(buildQuestion).filter((q) => q.answers.length > 0);
+  const QUESTION_BY_ID = new Map(QUESTIONS.map((q) => [q.id, q]));
+  const CATEGORIES = Array.from(new Set(QUESTIONS.map((q) => q.category)));
+
+  /* ======================================================================
+     4. ANSWER VALIDATION
+     Order: exact full name → alias/nickname → reversed name → unique surname
+            → conservative typo match.  A name that matches more than one
+            well-known entity asks for clarification instead of guessing.
+     ====================================================================== */
+  function outcome(q, ids, via, extra) {
+    const list = Array.from(ids);
+    if (list.length === 1) {
+      const id = list[0];
+      const answer = q.byEntity.get(id);
+      if (answer) return Object.assign({ kind: 'accepted', answer, via }, extra);
+      return Object.assign({ kind: 'nonqualifying', name: entityName(q.type, id, q.custom), note: q.near[id] || null, via }, extra);
+    }
+    if (!list.some((id) => q.byEntity.has(id))) return Object.assign({ kind: 'nonqualifying', name: null, note: null, via, group: true }, extra);
+    return Object.assign({ kind: 'ambiguous', via }, extra);
+  }
+
+  function fuzzyBest(input, pool, allowFn) {
+    let best = Infinity;
+    let ids = new Set();
+    for (let i = 0; i < pool.length; i++) {
+      const key = pool[i][0];
+      const allow = allowFn(key.length);
+      if (!allow) continue;
+      const limit = Math.min(allow, best);
+      if (Math.abs(key.length - input.length) > limit) continue;
+      const d = osa(input, key, limit);
+      if (d > limit) continue;
+      if (d < best) { best = d; ids = new Set([pool[i][1]]); } else { ids.add(pool[i][1]); }
+    }
+    return best !== Infinity && ids.size === 1 ? first(ids) : null;
+  }
+
+  function validatePlayer(q, n) {
+    const b = stripSuffix(n);
+    // Exact text (suffix kept) wins over suffix-stripped text, so "Kellen Winslow Jr." never becomes his father.
+    for (const key of b === n ? [n] : [n, b]) {
+      let hit = P_FULL.get(key);
+      if (hit) return outcome(q, hit, 'exact');
+      hit = P_ALIAS.get(key);
+      if (hit) return outcome(q, hit, 'alias', { reason: 'alias' });
+    }
+    let ids;
+    const words = b.split(' ');
+    if (words.length === 2) {
+      ids = P_FULL.get(words[1] + ' ' + words[0]);
+      if (ids) return outcome(q, ids, 'exact');
+    }
+    ids = P_SURNAME.get(b);
+    if (ids) return outcome(q, ids, 'surname', { reason: 'surname', surname: titleCase(b) });
+    const typoId = fuzzyBest(b, P_FUZZY, typoAllowance);
+    if (typoId) return outcome(q, new Set([typoId]), 'typo');
+    if (!b.includes(' ') && b.length >= 7) {
+      const sKey = fuzzyBest(b, P_SURNAME_FUZZY, (len) => (len >= 7 ? 1 : 0));
+      if (sKey) return outcome(q, P_SURNAME.get(sKey), 'typo', { reason: 'surname', surname: titleCase(sKey) });
+    }
+    return { kind: 'unrecognized' };
+  }
+
+  function validateIndexed(q, n, index, fuzzy, allowFn, reason) {
+    const ids = index.get(n);
+    if (ids) return outcome(q, ids, 'exact', { reason });
+    const id = fuzzyBest(n, fuzzy, allowFn);
+    if (id) return outcome(q, new Set([id]), 'typo', { reason });
+    return { kind: 'unrecognized' };
+  }
+
+  function validate(q, raw) {
+    if (!q) return { kind: 'unrecognized' };
+    const n = normalize(raw);
+    if (!n) return { kind: 'empty' };
+    switch (q.type) {
+      case 'player': return validatePlayer(q, n);
+      case 'team': return validateIndexed(q, n, T_INDEX, T_FUZZY, teamAllowance, 'team');
+      case 'venue': return validateIndexed(q, n, V_INDEX, V_FUZZY, typoAllowance, 'venue');
+      case 'custom': return validateIndexed(q, n, q.custom.index, q.custom.fuzzy, typoAllowance, 'custom');
+      default: return { kind: 'unrecognized' };
+    }
+  }
+
+  function feedbackFor(res, raw, q) {
+    const noun = { player: 'player', team: 'team', venue: 'stadium', custom: 'answer' }[q.type] || 'answer';
+    switch (res.kind) {
+      case 'empty':
+        return { tone: 'info', text: 'Type an answer first.' };
+      case 'ambiguous':
+        if (res.reason === 'surname') return { tone: 'info', text: `More than one well-known player is named ${res.surname}. Add a first name.` };
+        if (res.reason === 'team') return { tone: 'info', text: 'That could mean more than one team. Add the nickname.' };
+        if (res.reason === 'venue') return { tone: 'info', text: 'That could mean more than one stadium. Use the full name.' };
+        return { tone: 'info', text: `“${raw.trim()}” could mean more than one player. Be more specific.` };
+      case 'nonqualifying':
+        if (res.name) return { tone: 'error', text: `${res.name} doesn't qualify — try another answer.`, note: res.note };
+        if (res.surname) return { tone: 'error', text: `No qualifying ${noun} named ${res.surname} — try another answer.` };
+        return { tone: 'error', text: `That ${noun} doesn't qualify — try another answer.` };
+      default:
+        return { tone: 'error', text: 'Not recognized — try another answer.' };
+    }
+  }
+
+  /* ======================================================================
+     10. QUESTION SELECTION (seeded daily set + varied unlimited set)
+     ====================================================================== */
+  function hashString(str) {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function shuffle(list, rng) {
+    const a = list.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  const DIFFICULTY_RANK = { easy: 0, medium: 1, hard: 2 };
+
+  /** Seven questions from seven different categories, ordered easy → hard. */
+  function pickSeven(rng, avoid) {
+    const cats = shuffle(CATEGORIES, rng).slice(0, Math.min(CONFIG.ROUNDS, CATEGORIES.length));
+    const chosen = cats.map((cat) => {
+      const pool = QUESTIONS.filter((q) => q.category === cat);
+      const fresh = pool.filter((q) => !avoid.has(q.id));
+      const from = fresh.length ? fresh : pool;
+      return from[Math.floor(rng() * from.length)];
+    });
+    while (chosen.length < CONFIG.ROUNDS) {
+      const rest = QUESTIONS.filter((q) => chosen.indexOf(q) === -1);
+      chosen.push(rest[Math.floor(rng() * rest.length)]);
+    }
+    return chosen
+      .map((q, i) => ({ q, i }))
+      .sort((x, y) => (DIFFICULTY_RANK[x.q.difficulty] - DIFFICULTY_RANK[y.q.difficulty]) || (x.i - y.i))
+      .map((x) => x.q);
+  }
+  const dailyQuestions = (dateKey) => pickSeven(mulberry32(hashString(CONFIG.DAILY_SALT + '|' + dateKey)), new Set());
+  const unlimitedQuestions = () => pickSeven(Math.random, new Set(Store.get('recent', [], validRecent)));
+
+  const utcDateKey = (d) => (d || new Date()).toISOString().slice(0, 10);
+  function nextUtcMidnight(now) {
+    const d = new Date(now || Date.now());
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
+  }
+  function formatDateKey(key) {
+    const parts = String(key).split('-').map(Number);
+    if (parts.length !== 3 || parts.some((x) => !isFinite(x))) return String(key);
+    return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2])).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  }
+  function formatCountdown(ms) {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const pad = (x) => String(x).padStart(2, '0');
+    return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+  }
+  const localResetTime = () => new Date(nextUtcMidnight()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+  /* ======================================================================
+     7. SCORING
+     ====================================================================== */
+  const totalScore = (plays) => plays.reduce((sum, p) => sum + (p ? p.points : 0), 0);
+  const fieldProgress = (score) => Math.max(0, Math.min(100, (score / CONFIG.MAX_SCORE) * 100));
+  function zoneFor(progress) {
+    let zone = ZONES[0];
+    ZONES.forEach((z) => { if (progress >= z.min) zone = z; });
+    return zone;
+  }
+  function rankFor(score) {
+    let rank = RANKS[0];
+    RANKS.forEach((r) => { if (score >= r.min) rank = r; });
+    return rank;
+  }
+  function yardMarker(progress) {
+    if (progress <= 0) return 'Own goal line';
+    if (progress >= 100) return 'End zone';
+    const r = Math.round(progress);
+    if (r < 50) return `Own ${Math.max(1, r)}`;
+    if (r === 50) return 'Midfield';
+    return `Opp ${Math.max(1, 100 - r)}`;
+  }
+  function yardsText(progress) {
+    const y = Math.round(progress * 10) / 10;
+    return `${Number.isInteger(y) ? y : y.toFixed(1)} ${y === 1 ? 'yard' : 'yards'}`;
+  }
+  function bestTierOf(plays) {
+    let best = null;
+    plays.forEach((p) => { if (p && p.points > 0 && TIERS[p.rarity] && (!best || TIERS[p.rarity].order > TIERS[best].order)) best = p.rarity; });
+    return best;
+  }
+
+  /* ======================================================================
+     6. TIMER ENGINE (deadline-based; one active job; generation-guarded)
+     ====================================================================== */
+  const Timer = {
+    job: null, raf: 0, interval: 0, gen: 0,
+    run(job) {
+      this.stop();
+      const gen = ++this.gen;
+      this.job = Object.assign({ done: false }, job);
+      const loop = () => {
+        if (gen !== this.gen) return;
+        this.check();
+        if (gen === this.gen && this.job) this.raf = requestAnimationFrame(loop);
+      };
+      this.raf = requestAnimationFrame(loop);
+      this.interval = setInterval(() => { if (gen === this.gen) this.check(); }, 200);
+      this.check();
+    },
+    check() {
+      const job = this.job;
+      if (!job || job.done) return;
+      const left = job.endAt - Date.now();
+      if (job.onTick) job.onTick(Math.max(0, left));
+      if (left <= 0 && this.job === job) {
+        job.done = true;
+        const done = job.onDone;
+        this.stop();
+        if (done) done();
+      }
+    },
+    stop() {
+      this.gen++;
+      if (this.raf) cancelAnimationFrame(this.raf);
+      if (this.interval) clearInterval(this.interval);
+      this.raf = 0;
+      this.interval = 0;
+      this.job = null;
+    }
+  };
+
+  /** One-off UI delays, cleared together whenever the player leaves a game. */
+  const Delays = {
+    ids: new Set(),
+    add(fn, ms) {
+      const id = setTimeout(() => { this.ids.delete(id); fn(); }, ms);
+      this.ids.add(id);
+      return id;
+    },
+    clear() { this.ids.forEach((id) => clearTimeout(id)); this.ids.clear(); }
+  };
+
+  /* ======================================================================
+     12. SOUND (Web Audio synthesis; muted until the player turns it on)
+     ====================================================================== */
+  const Sound = {
+    ctx: null, master: null, enabled: false,
+    ensure() {
+      if (!this.ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        try {
+          this.ctx = new AC();
+          this.master = this.ctx.createGain();
+          this.master.gain.value = 0.6;
+          this.master.connect(this.ctx.destination);
+        } catch (err) { this.ctx = null; return null; }
+      }
+      if (this.ctx.state === 'suspended' && this.ctx.resume) this.ctx.resume().catch(() => {});
+      return this.ctx;
+    },
+    tone(freq, opts) {
+      const o = Object.assign({ type: 'sine', at: 0, dur: 0.14, gain: 0.16, to: null }, opts);
+      const ctx = this.ctx;
+      const t0 = ctx.currentTime + o.at;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = o.type;
+      osc.frequency.setValueAtTime(freq, t0);
+      if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t0 + o.dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(o.gain, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+      osc.connect(g);
+      g.connect(this.master);
+      osc.start(t0);
+      osc.stop(t0 + o.dur + 0.03);
+    },
+    noise(opts) {
+      const o = Object.assign({ at: 0, dur: 1.2, gain: 0.08, freq: 900 }, opts);
+      const ctx = this.ctx;
+      const len = Math.floor(ctx.sampleRate * o.dur);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = o.freq;
+      filter.Q.value = 0.6;
+      const g = ctx.createGain();
+      const t0 = ctx.currentTime + o.at;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(o.gain, t0 + 0.15);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+      src.connect(filter); filter.connect(g); g.connect(this.master);
+      src.start(t0); src.stop(t0 + o.dur);
+    },
+    play(name) {
+      if (!this.enabled || !this.ensure()) return;
+      try {
+        switch (name) {
+          case 'click': this.tone(520, { type: 'square', dur: 0.05, gain: 0.05 }); break;
+          case 'kickoff':
+            this.tone(2300, { dur: 0.12, gain: 0.07 });
+            this.tone(2050, { at: 0.13, dur: 0.12, gain: 0.07 });
+            this.tone(2300, { at: 0.26, dur: 0.22, gain: 0.07 });
+            this.tone(110, { at: 0.6, dur: 0.25, gain: 0.35, to: 45 });
+            break;
+          case 'snap':
+            this.tone(880, { type: 'triangle', dur: 0.08, gain: 0.12 });
+            this.tone(1320, { type: 'triangle', at: 0.08, dur: 0.12, gain: 0.12 });
+            break;
+          case 'tick': this.tone(1000, { type: 'square', dur: 0.035, gain: 0.04 }); break;
+          case 'correct': [523.25, 659.25, 783.99].forEach((f, i) => this.tone(f, { type: 'triangle', at: i * 0.08, dur: 0.18, gain: 0.14 })); break;
+          case 'rare': [659.25, 783.99, 987.77, 1318.5].forEach((f, i) => this.tone(f, { type: 'triangle', at: i * 0.07, dur: 0.24, gain: 0.13 })); break;
+          case 'gronk':
+            [[523.25, 659.25, 783.99], [587.33, 739.99, 880], [783.99, 987.77, 1174.66, 1567.98]].forEach((chord, i) =>
+              chord.forEach((f) => this.tone(f, { type: 'sawtooth', at: i * 0.18, dur: i === 2 ? 0.7 : 0.16, gain: 0.05 })));
+            this.noise({ at: 0.3, dur: 1.4, gain: 0.05, freq: 1200 });
+            break;
+          case 'wrong': this.tone(196, { type: 'sawtooth', dur: 0.22, gain: 0.07, to: 130 }); break;
+          case 'nudge':
+            this.tone(440, { type: 'triangle', dur: 0.08, gain: 0.1 });
+            this.tone(494, { type: 'triangle', at: 0.09, dur: 0.1, gain: 0.1 });
+            break;
+          case 'whistle':
+            this.tone(2400, { dur: 0.35, gain: 0.07, to: 2200 });
+            this.tone(330, { type: 'square', at: 0.05, dur: 0.3, gain: 0.04, to: 165 });
+            break;
+          case 'touchdown':
+            [[392, 493.88, 587.33], [523.25, 659.25, 783.99], [659.25, 783.99, 1046.5]].forEach((chord, i) =>
+              chord.forEach((f) => this.tone(f, { type: 'square', at: i * 0.22, dur: i === 2 ? 0.9 : 0.2, gain: 0.045 })));
+            this.noise({ at: 0.1, dur: 2.4, gain: 0.08, freq: 900 });
+            break;
+          default: break;
+        }
+      } catch (err) { /* sound is optional */ }
+    }
+  };
+
+  /* ======================================================================
+     8. FOOTBALL FIELD (SVG: end zones, yard lines, numbers, hash marks,
+        line of scrimmage, drive chart, football marker)
+     ====================================================================== */
+  const FIELD_W = 1200;
+  const FIELD_H = 270;
+  const fieldX = (progress) => 100 + progress * 10; // 10 units per yard, goal lines at 100 and 1100
+
+  function fieldSVG(prefix) {
+    const H = FIELD_H;
+    const out = [];
+    out.push(`<svg viewBox="0 0 ${FIELD_W} ${H}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">`);
+    out.push(`<defs>
+      <pattern id="${prefix}-ezl" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="22" height="22" fill="#12305A"/><rect width="9" height="22" fill="#18406F"/></pattern>
+      <pattern id="${prefix}-ezr" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="22" height="22" fill="#5C400A"/><rect width="9" height="22" fill="#74530F"/></pattern>
+    </defs>`);
+    for (let i = 0; i < 20; i++) out.push(`<rect x="${100 + i * 50}" y="0" width="50" height="${H}" fill="${i % 2 ? '#227A3D' : '#1E6F37'}"/>`);
+    out.push(`<rect x="0" y="0" width="100" height="${H}" fill="url(#${prefix}-ezl)"/>`);
+    out.push(`<rect x="1100" y="0" width="100" height="${H}" fill="url(#${prefix}-ezr)"/>`);
+    out.push(`<text class="ez-text ez-l" x="50" y="${H / 2}" transform="rotate(-90 50 ${H / 2})">GO DEEP</text>`);
+    out.push(`<text class="ez-text ez-r" x="1150" y="${H / 2}" transform="rotate(90 1150 ${H / 2})">SCORE BIG</text>`);
+    for (let yd = 5; yd < 100; yd += 5) {
+      const x = fieldX(yd);
+      out.push(`<line x1="${x}" y1="4" x2="${x}" y2="${H - 4}" stroke="rgba(247,249,252,.82)" stroke-width="${yd % 10 === 0 ? 3.5 : 2}"/>`);
+    }
+    let hash = '';
+    const inTop = Math.round(H * 0.37);
+    const inBot = Math.round(H * 0.63) - 10;
+    for (let yd = 1; yd < 100; yd++) {
+      if (yd % 5 === 0) continue;
+      const x = fieldX(yd);
+      hash += `M${x} 6v12M${x} ${H - 18}v12M${x} ${inTop}v10M${x} ${inBot}v10`;
+    }
+    out.push(`<path d="${hash}" stroke="rgba(247,249,252,.7)" stroke-width="2" fill="none"/>`);
+    out.push(`<path d="M100 0V${H}M1100 0V${H}" stroke="#F7F9FC" stroke-width="5"/>`);
+    out.push(`<rect x="2" y="2" width="${FIELD_W - 4}" height="${H - 4}" fill="none" stroke="#F7F9FC" stroke-width="4"/>`);
+    for (let k = 1; k <= 9; k++) {
+      const yd = k * 10;
+      const x = fieldX(yd);
+      const label = String(yd <= 50 ? yd : 100 - yd);
+      [H - 44, 44].forEach((yc, row) => {
+        const rot = row === 1 ? ` transform="rotate(180 ${x} ${yc})"` : '';
+        out.push(`<g${rot}><text class="yd-num" x="${x - 5}" y="${yc}" text-anchor="end" dominant-baseline="central">${label[0]}</text><text class="yd-num" x="${x + 5}" y="${yc}" text-anchor="start" dominant-baseline="central">${label[1]}</text></g>`);
+        if (yd !== 50) {
+          const left = yd < 50;
+          const ax = left ? x - 40 : x + 40;
+          const pts = left ? `${ax - 6},${yc} ${ax + 6},${yc - 8} ${ax + 6},${yc + 8}` : `${ax + 6},${yc} ${ax - 6},${yc - 8} ${ax - 6},${yc + 8}`;
+          out.push(`<polygon points="${pts}" fill="rgba(247,249,252,.85)"/>`);
+        }
+      });
+    }
+    out.push('<g class="drive" data-role="drive"></g>');
+    out.push(`<g class="gline" data-role="gline" style="opacity:0;transform:translate(100px,0px)"><line x1="0" y1="8" x2="0" y2="${H - 8}"/></g>`);
+    out.push(`<g class="ball-g no-anim" data-role="ball" style="transform:translate(100px,0px)">
+      <line class="los" x1="0" y1="6" x2="0" y2="${H - 6}"/>
+      <circle class="ball-ring" cx="0" cy="${H / 2}" r="40"/>
+      <ellipse cx="6" cy="${H / 2 + 24}" rx="30" ry="7" fill="rgba(0,0,0,.35)"/>
+      <use href="#sym-ball" x="-42" y="${H / 2 - 27}" width="84" height="54" transform="rotate(-12 0 ${H / 2})"/>
+    </g>`);
+    out.push('</svg>');
+    return out.join('');
+  }
+
+  function driveMarkup(plays, newIndex) {
+    let acc = 0;
+    let out = '';
+    plays.forEach((p, i) => {
+      if (!p) return;
+      const y = 76 + i * 20; // one lane per play, between the two rows of yard numbers
+      const x0 = fieldX(fieldProgress(acc));
+      const isNew = i === newIndex ? ' is-new' : '';
+      if (p.points > 0 && TIERS[p.rarity]) {
+        acc += p.points;
+        const x1 = fieldX(fieldProgress(acc));
+        const head = Math.min(12, (x1 - x0) * 0.6);
+        const labelLeft = x1 > 1050;
+        const lx = labelLeft ? x0 - 8 : x1 + 6;
+        out += `<g class="drive-play${isNew}" data-tier="${p.rarity}">` +
+          `<path class="drive-arrow" d="M${x0} ${y - 5}H${x1 - head}V${y - 9}L${x1} ${y}L${x1 - head} ${y + 9}V${y + 5}H${x0}Z"/>` +
+          `<text class="drive-label" x="${lx}" y="${y}" text-anchor="${labelLeft ? 'end' : 'start'}" dominant-baseline="central">+${p.points}</text></g>`;
+      } else {
+        out += `<g class="drive-miss${isNew}"><path d="M${x0 - 6} ${y - 6}L${x0 + 6} ${y + 6}M${x0 + 6} ${y - 6}L${x0 - 6} ${y + 6}"/></g>`;
+      }
+    });
+    return out;
+  }
+
+  function chipsMarkup(plays, current) {
+    let out = '';
+    for (let i = 0; i < CONFIG.ROUNDS; i++) {
+      const p = plays[i];
+      if (p) {
+        const scored = p.points > 0 && TIERS[p.rarity];
+        const tier = scored ? p.rarity : 'miss';
+        const label = scored ? `+${p.points}` : (p.status === 'skipped' ? 'SKIP' : '0');
+        const sr = scored ? `${TIERS[p.rarity].label}, ${p.points} points` : (p.status === 'skipped' ? 'skipped, no points' : 'no gain');
+        out += `<li class="chip" data-state="done" data-tier="${tier}"><span class="c-num" aria-hidden="true">P${i + 1}</span><span class="c-val" aria-hidden="true">${label}</span><span class="sr-only">Play ${i + 1}: ${sr}</span></li>`;
+      } else if (i === current) {
+        out += `<li class="chip" data-state="current"><span class="c-num" aria-hidden="true">P${i + 1}</span><span class="c-val" aria-hidden="true">LIVE</span><span class="sr-only">Play ${i + 1}: in progress</span></li>`;
+      } else {
+        out += `<li class="chip" data-state="future"><span class="c-num" aria-hidden="true">P${i + 1}</span><span class="c-val" aria-hidden="true">—</span><span class="sr-only">Play ${i + 1}: not played yet</span></li>`;
+      }
+    }
+    return out;
+  }
+
+  function createField(wrap, prefix) {
+    const box = wrap.querySelector('[data-role="field"]');
+    box.innerHTML = fieldSVG(prefix);
+    const ball = box.querySelector('[data-role="ball"]');
+    const drive = box.querySelector('[data-role="drive"]');
+    const gline = box.querySelector('[data-role="gline"]');
+    const zoneEl = wrap.querySelector('[data-role="zone"]');
+    const markerEl = wrap.querySelector('[data-role="marker"]');
+    const yardsEl = wrap.querySelector('[data-role="yards"]');
+    const scoreEl = wrap.querySelector('[data-role="score"]');
+    const chipsEl = wrap.querySelector('[data-role="chips"]');
+    let shownScore = 0;
+    return {
+      render(opts) {
+        const o = Object.assign({ plays: [], current: -1, animate: false, live: false, newIndex: -1 }, opts);
+        const score = totalScore(o.plays);
+        const progress = fieldProgress(score);
+        const instant = !o.animate || prefersReducedMotion();
+        ball.classList.toggle('no-anim', instant);
+        gline.style.transition = instant ? 'none' : '';
+        ball.style.transform = `translate(${fieldX(progress)}px, 0px)`;
+        box.dataset.live = o.live ? '1' : '0';
+        if (o.live && progress < 100) {
+          gline.style.opacity = '1';
+          gline.style.transform = `translate(${fieldX(Math.min(100, progress + 100 / 7))}px, 0px)`;
+        } else {
+          gline.style.opacity = '0';
+        }
+        drive.innerHTML = driveMarkup(o.plays, instant ? -1 : o.newIndex);
+        const zone = zoneFor(progress);
+        zoneEl.textContent = zone.label;
+        zoneEl.dataset.zone = zone.key;
+        markerEl.textContent = yardMarker(progress);
+        yardsEl.textContent = yardsText(progress);
+        animateNumber(scoreEl, instant ? score : shownScore, score);
+        shownScore = score;
+        box.setAttribute('aria-label', `Football field. ${zone.label}. Ball at ${yardMarker(progress).toLowerCase()}, ${yardsText(progress)} from your goal line. ${score} of ${CONFIG.MAX_SCORE} points.`);
+        chipsEl.innerHTML = chipsMarkup(o.plays, o.current);
+        return { score, progress, zone };
+      }
+    };
+  }
+
+  /* ---------- effects: lights, confetti, counters, toast, announcements ---------- */
+  function flashLights() {
+    if (prefersReducedMotion()) return;
+    const el = document.getElementById('lights');
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+
+  const Confetti = {
+    raf: 0,
+    run(duration) {
+      if (prefersReducedMotion()) return;
+      const total = duration || 3800;
+      const canvas = document.getElementById('confetti');
+      const ctx = canvas.getContext && canvas.getContext('2d');
+      if (!ctx) return;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      canvas.width = Math.floor(W * dpr);
+      canvas.height = Math.floor(H * dpr);
+      canvas.hidden = false;
+      const colors = ['#FFC857', '#A3FF12', '#F7F9FC', '#B47CFF', '#4DA3FF', '#FF9F43'];
+      const parts = Array.from({ length: 170 }, (_, i) => ({
+        x: Math.random() * W, y: -20 - Math.random() * H * 0.6,
+        vx: (Math.random() - 0.5) * 3.2, vy: 2 + Math.random() * 3.5,
+        w: 6 + Math.random() * 6, h: 9 + Math.random() * 9,
+        r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.28, c: colors[i % colors.length]
+      }));
+      cancelAnimationFrame(this.raf);
+      const t0 = performance.now();
+      const frame = (now) => {
+        const t = now - t0;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        ctx.globalAlpha = t > total - 800 ? Math.max(0, (total - t) / 800) : 1;
+        parts.forEach((p) => {
+          p.x += p.vx; p.y += p.vy; p.vy += 0.03; p.r += p.vr;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.r);
+          ctx.fillStyle = p.c;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r)));
+          ctx.restore();
+        });
+        if (t < total) {
+          this.raf = requestAnimationFrame(frame);
+        } else {
+          ctx.clearRect(0, 0, W, H);
+          canvas.hidden = true;
+        }
+      };
+      this.raf = requestAnimationFrame(frame);
+    }
+  };
+
+  const counters = new WeakMap();
+  function animateNumber(node, from, to, ms) {
+    const prev = counters.get(node);
+    if (prev) cancelAnimationFrame(prev);
+    if (from === to || prefersReducedMotion()) { node.textContent = String(to); counters.delete(node); return; }
+    const duration = ms || 900;
+    const t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / duration);
+      const e = 1 - Math.pow(1 - p, 3);
+      node.textContent = String(Math.round(from + (to - from) * e));
+      if (p < 1) counters.set(node, requestAnimationFrame(step)); else counters.delete(node);
+    };
+    node.textContent = String(from);
+    counters.set(node, requestAnimationFrame(step));
+  }
+
+  let toastTimer = 0;
+  function toast(message) {
+    const el = document.getElementById('toast');
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+  }
+
+  function announce(message, assertive) {
+    const el = document.getElementById(assertive ? 'srAssert' : 'srPolite');
+    el.textContent = '';
+    setTimeout(() => { el.textContent = message; }, 40);
+  }
+
+  function touchdownCelebration() {
+    flashLights();
+    Confetti.run(4200);
+    Sound.play('touchdown');
+    announce('Touchdown!');
+  }
+
+  /* ======================================================================
+     5. GAME STATE
+     ====================================================================== */
+  const TRANSITIONS = {
+    HOME: ['KICKOFF', 'PREVIEW', 'ANSWERING', 'REVEAL', 'RESULTS'],
+    KICKOFF: ['PREVIEW', 'HOME'],
+    PREVIEW: ['ANSWERING', 'HOME'],
+    ANSWERING: ['REVEAL', 'HOME'],
+    REVEAL: ['PREVIEW', 'RESULTS', 'HOME'],
+    RESULTS: ['HOME', 'KICKOFF', 'PREVIEW', 'ANSWERING', 'REVEAL']
+  };
+  const IN_GAME = ['KICKOFF', 'PREVIEW', 'ANSWERING', 'REVEAL'];
+
+  const state = {
+    phase: 'HOME', mode: null, dateKey: null, questions: [], round: 0, plays: [], score: 0,
+    attempts: 0, deadline: 0, startedAt: 0, revealAt: 0, lastSubmitAt: 0,
+    skipArmed: false, skipTimer: 0, warned: {}, lastTick: null, lastSummary: null
+  };
+  const dom = {};
+  let gameField = null;
+  let resultsField = null;
+
+  function setPhase(next) {
+    if (next === state.phase) return next === 'HOME';
+    const allowed = TRANSITIONS[state.phase] || [];
+    if (allowed.indexOf(next) === -1) {
+      console.warn(`[GRONKILLION] Ignored transition ${state.phase} → ${next}`);
+      return false;
+    }
+    state.phase = next;
+    document.body.dataset.phase = next.toLowerCase();
+    if (dom.qcard) dom.qcard.dataset.phase = next.toLowerCase();
+    return true;
+  }
+  const currentQuestion = () => state.questions[state.round];
+
+  // In-progress drives are saved per mode so a refresh never breaks the game.
+  const progressKey = (mode) => 'progress-' + mode;
+  function saveProgress() {
+    if (!state.mode || IN_GAME.indexOf(state.phase) === -1) return;
+    Store.set(progressKey(state.mode), {
+      v: 1, mode: state.mode, dateKey: state.dateKey,
+      qids: state.questions.map((q) => q.id), round: state.round, phase: state.phase,
+      deadline: state.deadline, plays: state.plays.slice(0, CONFIG.ROUNDS).map((p) => p || null),
+      attempts: state.attempts, startedAt: state.startedAt, savedAt: Date.now()
+    });
+  }
+  function loadProgress(mode) {
+    const p = Store.get(progressKey(mode), null, validProgress);
+    if (!p) return null;
+    const stale = Date.now() - p.savedAt > CONFIG.RESUME_MAX_AGE_MS;
+    const wrongDay = mode === 'daily' && p.dateKey !== utcDateKey();
+    const missing = p.qids.some((id) => !QUESTION_BY_ID.has(id));
+    const rec = mode === 'daily' ? loadDailyRecord() : null;
+    const alreadyDone = !!(rec && rec.date === p.dateKey);
+    if (stale || wrongDay || missing || alreadyDone || p.mode !== mode) {
+      Store.remove(progressKey(mode));
+      return null;
+    }
+    return p;
+  }
+  const clearProgress = (mode) => Store.remove(progressKey(mode));
+
+  function recordFinishedGame(summary) {
+    const stats = loadStats();
+    stats.gamesPlayed += 1;
+    const best = bestTierOf(summary.plays);
+    if (best && (!stats.bestTier || !TIERS[stats.bestTier] || TIERS[best].order > TIERS[stats.bestTier].order)) stats.bestTier = best;
+    let newHigh = false;
+    if (summary.mode === 'unlimited') {
+      stats.unlimitedGames = (stats.unlimitedGames || 0) + 1;
+      if (summary.score > (stats.unlimitedHigh || 0)) { newHigh = true; stats.unlimitedHigh = summary.score; }
+      const recent = Store.get('recent', [], validRecent);
+      Store.set('recent', summary.qids.concat(recent.filter((id) => summary.qids.indexOf(id) === -1)).slice(0, CONFIG.RECENT_MEMORY));
+    } else {
+      stats.dailyGames = (stats.dailyGames || 0) + 1;
+      Store.set('daily', {
+        date: summary.dateKey, score: summary.score, qids: summary.qids, plays: summary.plays,
+        finishedAt: summary.finishedAt, forfeited: !!summary.forfeited
+      });
+    }
+    Store.set('stats', stats);
+    return { newHigh: newHigh && summary.score > 0 };
+  }
+
+  /* ======================================================================
+     9. SCREEN RENDERING
+     ====================================================================== */
+  function cacheDom() {
+    ['topGame', 'topPlay', 'topMode', 'topScoreWrap', 'topScore', 'soundBtn', 'helpBtn', 'brandBtn',
+      'screen-home', 'screen-game', 'screen-results', 'kickoffBtn', 'kickoffSub', 'dailyBtn', 'unlimitedBtn', 'howBtn',
+      'resumeBox', 'dailyNote', 'statHigh', 'statDaily', 'statGames', 'statTier', 'storageNote',
+      'qcard', 'qCategory', 'qCount', 'timer', 'timerProg', 'timerNum', 'timerLabel', 'qPrompt', 'qScope',
+      'answerForm', 'inputWrap', 'answerInput', 'submitBtn', 'feedback', 'skipBtn',
+      'reveal', 'rvStatus', 'rvAnswer', 'rvTier', 'rvPoints', 'rvFlavor', 'rvNote', 'rvMore', 'nextBtn',
+      'gameField', 'resField', 'resHero', 'resMode', 'resScore', 'resRank', 'resMsg', 'resBadge', 'resBest', 'resPlays',
+      'replayBtn', 'shareBtn', 'resHomeBtn', 'resNext',
+      'howDialog', 'tierTable', 'confirmDialog', 'confirmTitle', 'confirmText', 'confirmOk', 'confirmCancel',
+      'shareDialog', 'shareText', 'shareCopy', 'kickoffFx']
+      .forEach((id) => { dom[id.replace(/-([a-z])/g, (m, c) => c.toUpperCase())] = document.getElementById(id); });
+  }
+  const setBtnLabel = (btn, text) => { const span = btn.querySelector('span'); if (span) span.textContent = text; };
+
+  let tickerId = 0;
+  function startTicker(fn) { stopTicker(); fn(); tickerId = setInterval(fn, 1000); }
+  function stopTicker() { if (tickerId) clearInterval(tickerId); tickerId = 0; }
+
+  function showScreen(name) {
+    dom.screenHome.hidden = name !== 'home';
+    dom.screenGame.hidden = name !== 'game';
+    dom.screenResults.hidden = name !== 'results';
+    dom.topGame.hidden = name !== 'game';
+    dom.topScoreWrap.hidden = name !== 'game';
+    if (name === 'home') {
+      let lastKey = utcDateKey();
+      startTicker(() => {
+        if (utcDateKey() !== lastKey) { lastKey = utcDateKey(); renderHome(); }
+        updateDailyNote();
+      });
+    } else if (name === 'results') {
+      startTicker(updateResultsNext);
+    } else {
+      stopTicker();
+    }
+    window.scrollTo(0, 0);
+  }
+
+  function kickoffTarget() {
+    const rec = loadDailyRecord();
+    const doneToday = !!(rec && rec.date === utcDateKey());
+    if (loadProgress('daily')) return { mode: 'daily', resume: true, label: "Resume today's Daily Challenge" };
+    if (!doneToday) return { mode: 'daily', resume: false, label: "Today's Daily Challenge" };
+    if (loadProgress('unlimited')) return { mode: 'unlimited', resume: true, label: 'Resume your Unlimited drive' };
+    return { mode: 'unlimited', resume: false, label: 'Unlimited Mode' };
+  }
+
+  function renderHome() {
+    const stats = loadStats();
+    const rec = loadDailyRecord();
+    const doneToday = !!(rec && rec.date === utcDateKey());
+    const pDaily = loadProgress('daily');
+    const pUnl = loadProgress('unlimited');
+    dom.statHigh.textContent = String(stats.unlimitedHigh || 0);
+    dom.statGames.textContent = String(stats.gamesPlayed || 0);
+    dom.statDaily.innerHTML = doneToday ? `${rec.score}<span class="small"> / 700</span>` :
+      (pDaily ? '<span class="small">In progress</span>' : '<span class="small">Not played</span>');
+    dom.statTier.innerHTML = stats.bestTier && TIERS[stats.bestTier] ?
+      `<span class="mini-tier" data-tier="${stats.bestTier}"><span aria-hidden="true">${TIERS[stats.bestTier].glyph}</span> ${escapeHTML(TIERS[stats.bestTier].label)}</span>` :
+      '<span class="small">None yet</span>';
+    const rows = [];
+    [pDaily, pUnl].forEach((p) => {
+      if (!p) return;
+      const label = p.mode === 'daily' ? "Today's Daily Challenge" : 'Your Unlimited drive';
+      rows.push(`<div class="resume-row"><p>${label} is in progress<span>Play ${p.round + 1} of ${CONFIG.ROUNDS}, ${totalScore(p.plays)} points so far</span></p>` +
+        `<button type="button" class="btn btn-primary" data-action="resume" data-mode="${p.mode}"><span>Resume</span></button>` +
+        `<button type="button" class="btn btn-ghost" data-action="abandon" data-mode="${p.mode}"><span>${p.mode === 'daily' ? 'Forfeit' : 'Abandon'}</span></button></div>`);
+    });
+    dom.resumeBox.innerHTML = rows.join('');
+    dom.resumeBox.hidden = rows.length === 0;
+    dom.kickoffSub.textContent = kickoffTarget().label;
+    setBtnLabel(dom.dailyBtn, doneToday ? "Today's Results" : (pDaily ? 'Resume Daily' : 'Daily Challenge'));
+    setBtnLabel(dom.unlimitedBtn, pUnl ? 'Resume Unlimited' : 'Unlimited Mode');
+    dom.storageNote.hidden = Store.available;
+    updateDailyNote();
+  }
+
+  function updateDailyNote() {
+    const rec = loadDailyRecord();
+    const done = !!(rec && rec.date === utcDateKey());
+    const left = formatCountdown(nextUtcMidnight() - Date.now());
+    const local = escapeHTML(localResetTime());
+    dom.dailyNote.innerHTML = done ?
+      `Daily complete. The next Daily Challenge starts in <strong>${left}</strong> (${local} your time).` :
+      `Today's Daily Challenge resets in <strong>${left}</strong> (${local} your time).`;
+  }
+
+  function updateResultsNext() {
+    const s = state.lastSummary;
+    if (!s) { dom.resNext.textContent = ''; return; }
+    dom.resNext.innerHTML = s.mode === 'daily' ?
+      `The next Daily Challenge starts in <strong>${formatCountdown(nextUtcMidnight() - Date.now())}</strong> (${escapeHTML(localResetTime())} your time).` :
+      'Unlimited Mode never closes. Run it back whenever you like.';
+  }
+
+  function renderTopbar() {
+    dom.topPlay.textContent = `Play ${state.round + 1} of ${CONFIG.ROUNDS}`;
+    dom.topMode.textContent = state.mode === 'daily' ? 'Daily Challenge' : 'Unlimited';
+  }
+
+  function setFeedback(text, tone, note) {
+    dom.feedback.className = 'feedback' + (tone ? ' is-' + tone : '');
+    dom.feedback.innerHTML = text ? escapeHTML(text) + (note ? `<span class="fb-note">${escapeHTML(note)}</span>` : '') : '';
+  }
+
+  function resetSkip() {
+    state.skipArmed = false;
+    clearTimeout(state.skipTimer);
+    dom.skipBtn.textContent = 'Skip play';
+    dom.skipBtn.classList.remove('armed');
+  }
+
+  function setAnswerEnabled(enabled) {
+    if (enabled) {
+      dom.answerInput.removeAttribute('aria-disabled');
+      dom.answerInput.placeholder = 'Type your answer';
+      dom.submitBtn.removeAttribute('aria-disabled');
+    } else {
+      dom.answerInput.setAttribute('aria-disabled', 'true');
+      dom.answerInput.placeholder = 'Read the play…';
+      dom.submitBtn.setAttribute('aria-disabled', 'true');
+    }
+    dom.skipBtn.disabled = !enabled;
+  }
+
+  function renderQuestion() {
+    const q = currentQuestion();
+    dom.qCategory.textContent = q.category;
+    dom.qCount.textContent = `Play ${state.round + 1} of ${CONFIG.ROUNDS}`;
+    dom.qPrompt.textContent = q.prompt;
+    dom.qScope.textContent = q.scope;
+    dom.answerForm.hidden = false;
+    dom.reveal.hidden = true;
+    dom.answerInput.value = '';
+    setFeedback('', null);
+    dom.inputWrap.classList.remove('ok', 'bad', 'shake');
+    resetSkip();
+    dom.qcard.classList.remove('enter');
+    void dom.qcard.offsetWidth;
+    dom.qcard.classList.add('enter');
+    renderTopbar();
+  }
+
+  const RING = 2 * Math.PI * 34;
+  function renderTimer(mode, leftMs) {
+    const total = mode === 'snap' ? CONFIG.PREVIEW_MS : CONFIG.ANSWER_MS;
+    const secs = Math.max(0, Math.ceil(leftMs / 1000));
+    const frac = Math.max(0, Math.min(1, leftMs / total));
+    dom.timerProg.style.strokeDashoffset = String(RING * (1 - frac));
+    let st = 'go';
+    let label = 'Sec';
+    if (mode === 'off') { st = 'off'; label = 'Final'; }
+    else if (mode === 'snap') { st = 'snap'; label = 'Snap'; }
+    else if (secs <= CONFIG.DANGER_SECONDS) { st = 'danger'; label = 'Final'; }
+    else if (secs <= CONFIG.WARN_SECONDS) { st = 'warn'; label = 'Hurry'; }
+    if (dom.timer.dataset.state !== st) dom.timer.dataset.state = st;
+    const text = String(secs);
+    if (dom.timerNum.textContent !== text) {
+      dom.timerNum.textContent = text;
+      dom.timer.setAttribute('aria-label', mode === 'snap' ? `Snap count: ${text}` : `Play clock: ${text} seconds left`);
+    }
+    if (dom.timerLabel.textContent !== label) dom.timerLabel.textContent = label;
+  }
+
+  function suggestionsFor(q, excludeCanonical) {
+    const pool = q.answers.filter((a) => a.canonical !== excludeCanonical);
+    const out = [];
+    for (let i = TIER_ORDER.length - 1; i >= 0 && out.length < 3; i--) {
+      const inTier = pool.filter((a) => a.rarity === TIER_ORDER[i]);
+      if (inTier.length) out.push(pick(inTier));
+    }
+    return out;
+  }
+
+  function renderReveal(play, q, opts) {
+    const animate = !!opts.animate;
+    const prevScore = opts.prevScore;
+    const scored = play.status === 'accepted' && play.points > 0 && TIERS[play.rarity];
+    const tierKey = scored ? play.rarity : 'miss';
+    dom.answerForm.hidden = true;
+    dom.reveal.hidden = false;
+    dom.reveal.classList.toggle('is-miss', !scored);
+    dom.reveal.dataset.tier = tierKey;
+    const burst = dom.reveal.querySelector('.burst');
+    burst.style.animation = 'none';
+    void burst.offsetWidth;
+    burst.style.animation = '';
+
+    dom.rvStatus.textContent = scored ? 'Accepted' : (play.status === 'timeout' ? "Time's up" : play.status === 'skipped' ? 'Play skipped' : 'No gain');
+    dom.rvAnswer.textContent = scored ? play.canonical : (play.status === 'skipped' ? 'Punt' : 'Delay of game');
+    dom.rvTier.dataset.tier = tierKey;
+    dom.rvTier.innerHTML = scored ?
+      `<span class="glyph" aria-hidden="true">${TIERS[play.rarity].glyph}</span><span>${escapeHTML(TIERS[play.rarity].label)}</span>` :
+      '<span class="glyph" aria-hidden="true">✕</span><span>No gain</span>';
+    dom.rvPoints.textContent = `+${play.points} ${play.points === 1 ? 'point' : 'points'}`;
+    if (animate) { dom.rvPoints.classList.remove('pop'); void dom.rvPoints.offsetWidth; dom.rvPoints.classList.add('pop'); }
+    dom.rvFlavor.textContent = pick(FLAVOR[scored ? play.rarity : play.status] || FLAVOR.timeout);
+
+    let note = '';
+    if (scored && play.input && normalize(play.input) !== normalize(play.canonical)) note = `You typed “${play.input}”, accepted as ${play.canonical}.`;
+    if (!scored && play.pending && TIERS[play.pending.rarity]) note = `So close: “${play.pending.input}” would have scored +${play.pending.points} (${TIERS[play.pending.rarity].label}). Submit before the clock hits zero.`;
+    if (scored && play.attempts > 0) note += (note ? ' ' : '') + `Locked in after ${play.attempts} ${play.attempts === 1 ? 'miss' : 'misses'}.`;
+    dom.rvNote.textContent = note;
+    dom.rvNote.hidden = !note;
+
+    const others = suggestionsFor(q, scored ? play.canonical : null);
+    dom.rvMore.innerHTML = `<h3>${scored ? 'Other deep cuts' : 'Answers that would have worked'} (${q.answers.length} accepted answers in all)</h3>` +
+      `<ul>${others.map((a) => `<li data-tier="${a.rarity}">${escapeHTML(a.canonical)} <small>${escapeHTML(TIERS[a.rarity].label)}</small></li>`).join('')}</ul>`;
+    dom.rvMore.hidden = others.length === 0;
+    setBtnLabel(dom.nextBtn, state.round >= CONFIG.ROUNDS - 1 ? 'See Final Results' : 'Next Play');
+
+    animateNumber(dom.topScore, animate ? prevScore : state.score, state.score);
+    gameField.render({ plays: state.plays, current: -1, animate, live: false, newIndex: animate ? state.round : -1 });
+
+    const zone = zoneFor(fieldProgress(state.score));
+    const summaryLine = scored ?
+      `Accepted: ${play.canonical}. ${TIERS[play.rarity].label}, plus ${play.points} points.` :
+      `${play.status === 'timeout' ? "Time's up" : 'Play skipped'}. No points.`;
+    announce(`${summaryLine} Total ${state.score} points. ${zone.label}, ${yardMarker(fieldProgress(state.score)).toLowerCase()}.`);
+
+    if (animate) {
+      if (scored) {
+        if (play.rarity === 'gronkillion') { Sound.play('gronk'); flashLights(); }
+        else if (play.rarity === 'hall_of_famer' || play.rarity === 'all_pro') Sound.play('rare');
+        else Sound.play('correct');
+      } else {
+        Sound.play('whistle');
+      }
+      const before = fieldProgress(prevScore);
+      const after = fieldProgress(state.score);
+      if (after >= 100 && before < 100) Delays.add(touchdownCelebration, 900);
+      else if (after >= 80 && before < 80) Delays.add(flashLights, 900);
+    }
+    Delays.add(() => {
+      if (state.phase === 'REVEAL') {
+        try { dom.nextBtn.focus({ preventScroll: true }); } catch (err) { dom.nextBtn.focus(); }
+        dom.reveal.scrollIntoView({ block: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+      }
+    }, animate ? CONFIG.NEXT_GUARD_MS : 0);
+  }
+
+  function renderResults(summary, opts) {
+    const o = Object.assign({ newHigh: false, viewOnly: false }, opts);
+    const rank = rankFor(summary.score);
+    state.lastSummary = summary;
+    dom.resHero.dataset.rank = rank.key;
+    dom.resMode.textContent = summary.mode === 'daily' ?
+      `Daily Challenge, ${formatDateKey(summary.dateKey)}${summary.forfeited ? ' (forfeited)' : ''}` : 'Unlimited Mode';
+    dom.resRank.textContent = rank.label;
+    dom.resMsg.textContent = rank.msg;
+    dom.resBadge.hidden = !o.newHigh;
+
+    const best = summary.plays.reduce((b, p) => (p && p.points > 0 && TIERS[p.rarity] && p.points > (b ? b.points : 0) ? p : b), null);
+    dom.resBest.dataset.tier = best ? best.rarity : 'miss';
+    dom.resBest.innerHTML = best ?
+      `<h3>Best answer</h3><p>${escapeHTML(best.canonical)} <small>${escapeHTML(TIERS[best.rarity].label)}, +${best.points}</small></p>` :
+      '<h3>Best answer</h3><p>No points on this drive</p>';
+
+    dom.resPlays.innerHTML = summary.plays.map((p, i) => {
+      const q = QUESTION_BY_ID.get(p ? p.qid : summary.qids[i]);
+      const scored = p && p.points > 0 && TIERS[p.rarity];
+      const tier = scored ? p.rarity : 'miss';
+      const answer = scored ?
+        `<b>${escapeHTML(p.canonical)}</b> <span class="rp-tier">${escapeHTML(TIERS[p.rarity].label)}</span>` :
+        (p && p.status === 'skipped' ? 'Skipped' : p && p.status === 'forfeit' ? 'Forfeited' : 'Timed out');
+      return `<li class="res-play" data-tier="${tier}"><span class="rp-num" aria-hidden="true">${i + 1}</span>` +
+        `<p class="rp-q"><span class="rp-cat">${escapeHTML(q ? q.category : '')}</span>${escapeHTML(q ? q.prompt : 'Retired question')}</p>` +
+        `<p class="rp-a"><span class="sr-only">Play ${i + 1}. </span>Your answer: ${answer}</p>` +
+        `<span class="rp-pts">+${p ? p.points : 0}</span></li>`;
+    }).join('');
+
+    setBtnLabel(dom.replayBtn, summary.mode === 'daily' ? (loadProgress('unlimited') ? 'Resume Unlimited' : 'Play Unlimited') : 'Play Again');
+    showScreen('results');
+    animateNumber(dom.resScore, o.viewOnly ? summary.score : 0, summary.score, 1200);
+    resultsField.render({ plays: [], current: -1, animate: false });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      resultsField.render({ plays: summary.plays, current: -1, animate: !o.viewOnly, newIndex: -1 });
+    }));
+    try { dom.resRank.focus({ preventScroll: true }); } catch (err) { dom.resRank.focus(); }
+  }
+
+  function buildTierTable() {
+    dom.tierTable.querySelector('tbody').innerHTML = TIER_ORDER.map((k) => {
+      const t = TIERS[k];
+      return `<tr data-tier="${k}"><td aria-hidden="true">${t.glyph}</td><td><span class="tt-name">${escapeHTML(t.label)}</span><br><span class="tt-desc">${escapeHTML(t.desc)}</span></td><td class="tt-pts">${t.points} pts</td></tr>`;
+    }).join('');
+  }
+
+  /* ======================================================================
+     5b. GAME FLOW
+     ====================================================================== */
+  function focusAnswer() {
+    try { dom.answerInput.focus({ preventScroll: true }); } catch (err) { dom.answerInput.focus(); }
+  }
+
+  function startNewGame(mode) {
+    if (state.phase !== 'HOME' && state.phase !== 'RESULTS') return;
+    const today = utcDateKey();
+    if (mode === 'daily') {
+      const rec = loadDailyRecord();
+      if (rec && rec.date === today) { showDailyResults(rec); return; }
+      if (loadProgress('daily')) { resumeGame('daily'); return; }
+    } else if (loadProgress('unlimited')) {
+      resumeGame('unlimited');
+      return;
+    }
+    Object.assign(state, {
+      mode, dateKey: mode === 'daily' ? today : null,
+      questions: mode === 'daily' ? dailyQuestions(today) : unlimitedQuestions(),
+      round: 0, plays: [], score: 0, attempts: 0, deadline: 0, startedAt: Date.now(), revealAt: 0
+    });
+    if (!setPhase('KICKOFF')) return;
+    showScreen('game');
+    renderTopbar();
+    dom.qCategory.textContent = 'Kickoff';
+    dom.qCount.textContent = `Play 1 of ${CONFIG.ROUNDS}`;
+    dom.qPrompt.textContent = 'Get ready…';
+    dom.qScope.textContent = '';
+    dom.answerForm.hidden = false;
+    dom.reveal.hidden = true;
+    setFeedback('', null);
+    setAnswerEnabled(false);
+    renderTimer('snap', CONFIG.PREVIEW_MS);
+    animateNumber(dom.topScore, 0, 0);
+    gameField.render({ plays: [], current: 0, animate: false });
+    saveProgress();
+    Sound.play('kickoff');
+    announce(mode === 'daily' ? "Kickoff! Today's Daily Challenge." : 'Kickoff! Unlimited Mode.');
+    runKickoff(startRound);
+  }
+
+  function runKickoff(done) {
+    if (prefersReducedMotion()) { Delays.add(done, 150); return; }
+    const fx = dom.kickoffFx;
+    fx.hidden = false;
+    fx.classList.remove('run');
+    void fx.offsetWidth;
+    fx.classList.add('run');
+    Delays.add(() => { fx.hidden = true; fx.classList.remove('run'); done(); }, CONFIG.KICKOFF_MS);
+  }
+
+  function startRound() {
+    if (!setPhase('PREVIEW')) return;
+    Timer.stop();
+    Object.assign(state, { attempts: 0, deadline: 0, lastSubmitAt: 0, warned: {}, lastTick: null });
+    renderQuestion();
+    setAnswerEnabled(false);
+    gameField.render({ plays: state.plays, current: state.round, animate: false, live: true });
+    renderTimer('snap', CONFIG.PREVIEW_MS);
+    saveProgress();
+    const q = currentQuestion();
+    announce(`Play ${state.round + 1} of ${CONFIG.ROUNDS}. ${q.category}. ${q.prompt} Answering opens in 3 seconds.`);
+    focusAnswer();
+    Timer.run({ endAt: Date.now() + CONFIG.PREVIEW_MS, onTick: (left) => renderTimer('snap', left), onDone: () => beginAnswering() });
+  }
+
+  function beginAnswering(resumeDeadline) {
+    if (!setPhase('ANSWERING')) return;
+    state.deadline = resumeDeadline || (Date.now() + CONFIG.ANSWER_MS);
+    if (!resumeDeadline) dom.answerInput.value = '';
+    setAnswerEnabled(true);
+    saveProgress();
+    Sound.play('snap');
+    announce(resumeDeadline ? `Back in the huddle. ${Math.ceil((state.deadline - Date.now()) / 1000)} seconds left.` : 'Go! 25 seconds.');
+    focusAnswer();
+    Timer.run({ endAt: state.deadline, onTick: onAnswerTick, onDone: onTimeUp });
+  }
+
+  function onAnswerTick(left) {
+    renderTimer('answer', left);
+    const secs = Math.ceil(left / 1000);
+    if (secs <= CONFIG.WARN_SECONDS && !state.warned.warn) { state.warned.warn = true; announce(`${CONFIG.WARN_SECONDS} seconds left.`); }
+    if (secs <= CONFIG.DANGER_SECONDS && !state.warned.danger) { state.warned.danger = true; announce(`${CONFIG.DANGER_SECONDS} seconds left.`, true); }
+    if (secs <= CONFIG.DANGER_SECONDS && secs > 0 && state.lastTick !== secs) { state.lastTick = secs; Sound.play('tick'); }
+  }
+
+  function onTimeUp() {
+    if (state.phase !== 'ANSWERING') return;
+    const q = currentQuestion();
+    const raw = dom.answerInput.value;
+    const res = validate(q, raw);
+    const pending = res.kind === 'accepted' ? { input: raw.trim().slice(0, 64), canonical: res.answer.canonical, rarity: res.answer.rarity, points: res.answer.points } : null;
+    renderTimer('off', 0);
+    announce("Time's up.", true);
+    finishRound({ status: 'timeout', pending });
+  }
+
+  function onSubmit(event) {
+    event.preventDefault();
+    if (state.phase === 'PREVIEW' || state.phase === 'KICKOFF') { setFeedback('Hold on. Answering opens after the snap.', 'info'); return; }
+    if (state.phase !== 'ANSWERING') return;
+    const now = Date.now();
+    if (now - state.lastSubmitAt < CONFIG.SUBMIT_DEBOUNCE_MS) return; // double-submit guard
+    state.lastSubmitAt = now;
+    if (now >= state.deadline) { Timer.check(); return; }
+    const q = currentQuestion();
+    const raw = dom.answerInput.value;
+    const res = validate(q, raw);
+    if (res.kind === 'accepted') {
+      finishRound({ status: 'accepted', input: raw, answer: res.answer, via: res.via });
+      return;
+    }
+    const fb = feedbackFor(res, raw, q);
+    setFeedback(fb.text, fb.tone, fb.note);
+    if (res.kind === 'empty') { focusAnswer(); return; }
+    dom.inputWrap.classList.remove('shake', 'bad');
+    void dom.inputWrap.offsetWidth;
+    if (fb.tone === 'error') {
+      state.attempts += 1;
+      dom.inputWrap.classList.add('shake', 'bad');
+      Sound.play('wrong');
+    } else {
+      Sound.play('nudge');
+    }
+    saveProgress();
+    focusAnswer();
+    dom.answerInput.select();
+  }
+
+  function onSkip() {
+    if (state.phase !== 'ANSWERING') return;
+    if (!state.skipArmed) {
+      state.skipArmed = true;
+      dom.skipBtn.textContent = 'Tap again to skip';
+      dom.skipBtn.classList.add('armed');
+      clearTimeout(state.skipTimer);
+      state.skipTimer = setTimeout(resetSkip, 2600);
+      return;
+    }
+    finishRound({ status: 'skipped' });
+  }
+
+  function finishRound(result) {
+    if (state.phase !== 'ANSWERING') return;
+    if (!setPhase('REVEAL')) return;
+    Timer.stop();
+    resetSkip();
+    const q = currentQuestion();
+    const prevScore = state.score;
+    const a = result.answer || null;
+    const play = {
+      qid: q.id, status: result.status, input: String(result.input || '').trim().slice(0, 64),
+      canonical: a ? a.canonical : null, rarity: a ? a.rarity : null, points: a ? a.points : 0,
+      via: result.via || null, attempts: state.attempts, pending: result.pending || null
+    };
+    state.plays[state.round] = play;
+    state.score = totalScore(state.plays);
+    state.revealAt = Date.now();
+    saveProgress();
+    if (a) {
+      // Green confirmation on the input, then the reveal.
+      dom.inputWrap.classList.remove('bad', 'shake');
+      dom.inputWrap.classList.add('ok');
+      setFeedback('Accepted!', 'ok');
+      Delays.add(() => { if (state.phase === 'REVEAL') renderReveal(play, q, { prevScore, animate: true }); }, prefersReducedMotion() ? 0 : CONFIG.CONFIRM_FLASH_MS);
+    } else {
+      renderReveal(play, q, { prevScore, animate: true });
+    }
+  }
+
+  function onNext(event) {
+    if (state.phase !== 'REVEAL') return;
+    // Keyboard activations (detail 0) right after the reveal are usually the same Enter press repeating.
+    const keyboard = !event || event.detail === 0;
+    if (keyboard && Date.now() - state.revealAt < CONFIG.NEXT_GUARD_MS) return;
+    if (dom.reveal.hidden) return; // confirmation still showing
+    if (state.round >= CONFIG.ROUNDS - 1) { finishGame(); return; }
+    state.round += 1;
+    startRound();
+  }
+
+  function finishGame() {
+    if (!setPhase('RESULTS')) return;
+    Timer.stop();
+    const summary = {
+      mode: state.mode, dateKey: state.dateKey, qids: state.questions.map((q) => q.id),
+      plays: state.plays.slice(0, CONFIG.ROUNDS), score: totalScore(state.plays), finishedAt: Date.now()
+    };
+    const outcomeInfo = recordFinishedGame(summary);
+    clearProgress(state.mode);
+    renderResults(summary, { newHigh: outcomeInfo.newHigh });
+    const rank = rankFor(summary.score);
+    announce(`Final score: ${summary.score} out of ${CONFIG.MAX_SCORE}. Rank: ${rank.label}. ${rank.msg}`);
+    if (summary.score >= CONFIG.MAX_SCORE) Delays.add(touchdownCelebration, 700);
+    else if (summary.score >= 500) { Delays.add(flashLights, 500); Sound.play('rare'); }
+    else Sound.play('whistle');
+  }
+
+  function showDailyResults(rec) {
+    if (!setPhase('RESULTS')) return;
+    renderResults({ mode: 'daily', dateKey: rec.date, qids: rec.qids, plays: rec.plays, score: rec.score, finishedAt: rec.finishedAt, forfeited: rec.forfeited }, { viewOnly: true });
+  }
+
+  function resumeGame(mode) {
+    if (state.phase !== 'HOME' && state.phase !== 'RESULTS') return;
+    const p = loadProgress(mode);
+    if (!p) { renderHome(); return; }
+    const questions = p.qids.map((id) => QUESTION_BY_ID.get(id));
+    const plays = p.plays.slice(0, CONFIG.ROUNDS);
+    Object.assign(state, {
+      mode: p.mode, dateKey: p.dateKey, questions, round: p.round, plays, score: totalScore(plays),
+      attempts: p.attempts || 0, deadline: 0, startedAt: p.startedAt || Date.now(), revealAt: 0, lastSubmitAt: 0, warned: {}, lastTick: null
+    });
+    showScreen('game');
+    renderTopbar();
+    animateNumber(dom.topScore, state.score, state.score);
+    const q = currentQuestion();
+    if (plays[p.round]) {
+      if (!setPhase('REVEAL')) return;
+      renderQuestion();
+      renderReveal(plays[p.round], q, { prevScore: state.score, animate: false });
+      return;
+    }
+    if (p.phase === 'ANSWERING' && p.deadline) {
+      renderQuestion();
+      gameField.render({ plays, current: p.round, animate: false, live: true });
+      if (Date.now() < p.deadline - 300) {
+        beginAnswering(p.deadline);
+      } else if (setPhase('ANSWERING')) {
+        onTimeUp(); // the play clock ran out while the player was away
+      }
+      return;
+    }
+    startRound();
+  }
+
+  function goHome() {
+    Timer.stop();
+    Delays.clear();
+    resetSkip();
+    dom.kickoffFx.hidden = true;
+    dom.kickoffFx.classList.remove('run');
+    setPhase('HOME');
+    renderHome();
+    showScreen('home');
+  }
+
+  async function requestExit() {
+    if (IN_GAME.indexOf(state.phase) !== -1) {
+      const clockRunning = state.phase !== 'REVEAL';
+      const ok = await confirmAction({
+        title: 'Leave this drive?',
+        text: clockRunning ? 'Your drive is saved, but the play clock keeps running while you are away. Resume it from the home screen.' : 'Your drive is saved. Resume it from the home screen.',
+        ok: 'Leave', cancel: 'Keep playing'
+      });
+      if (!ok) return;
+      saveProgress();
+    }
+    goHome();
+  }
+
+  async function abandonProgress(mode) {
+    const p = loadProgress(mode);
+    if (!p) { renderHome(); return; }
+    if (mode === 'daily') {
+      const ok = await confirmAction({
+        title: "Forfeit today's Daily?",
+        text: "You get one scored Daily Challenge per day. Forfeiting locks in your current score and ends today's attempt.",
+        ok: 'Forfeit', cancel: 'Keep it'
+      });
+      if (!ok) return;
+      const plays = p.qids.map((qid, i) => p.plays[i] || { qid, status: 'forfeit', input: '', canonical: null, rarity: null, points: 0 });
+      recordFinishedGame({ mode: 'daily', dateKey: p.dateKey, qids: p.qids, plays, score: totalScore(plays), finishedAt: Date.now(), forfeited: true });
+    } else {
+      const ok = await confirmAction({ title: 'Abandon this drive?', text: 'Your Unlimited drive will be cleared. Only finished drives count toward your high score.', ok: 'Abandon', cancel: 'Keep it' });
+      if (!ok) return;
+    }
+    clearProgress(mode);
+    renderHome();
+  }
+
+  function confirmAction(o) {
+    const dlg = dom.confirmDialog;
+    if (typeof dlg.showModal !== 'function') return Promise.resolve(window.confirm(o.title + '\n\n' + o.text));
+    if (dlg.open) dlg.close('cancel');
+    dom.confirmTitle.textContent = o.title;
+    dom.confirmText.textContent = o.text;
+    setBtnLabel(dom.confirmOk, o.ok || 'OK');
+    setBtnLabel(dom.confirmCancel, o.cancel || 'Cancel');
+    dlg.returnValue = '';
+    return new Promise((resolve) => {
+      dlg.addEventListener('close', () => resolve(dlg.returnValue === 'ok'), { once: true });
+      dlg.showModal();
+      dom.confirmCancel.focus();
+    });
+  }
+
+  function openDialog(dlg) {
+    if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute('open', '');
+  }
+
+  function setSound(on, fromUser) {
+    Sound.enabled = !!on;
+    dom.soundBtn.setAttribute('aria-pressed', String(!!on));
+    dom.soundBtn.title = on ? 'Sound on' : 'Sound off';
+    if (fromUser) {
+      Store.set('settings', { sound: !!on });
+      if (on) { Sound.ensure(); Sound.play('click'); }
+      toast(on ? 'Sound on' : 'Sound off');
+    }
+  }
+
+  /* ======================================================================
+     13. SHARING (Web Share API when available, clipboard fallback)
+     ====================================================================== */
+  function shareTextFor(summary) {
+    const rank = rankFor(summary.score);
+    const squares = Array.from({ length: CONFIG.ROUNDS }, (_, i) => {
+      const p = summary.plays[i];
+      return p && p.points > 0 && TIERS[p.rarity] ? TIERS[p.rarity].emoji : '⬛';
+    }).join(' ');
+    const mode = summary.mode === 'daily' ? `Daily Challenge, ${formatDateKey(summary.dateKey)}` : 'Unlimited Mode';
+    return ['GRONKILLION 🏈', mode, '', '7 Plays. One Legendary Drive.', '', `Score: ${summary.score}/${CONFIG.MAX_SCORE}`, '',
+      `🏈 ${squares}`, '', `Rank: ${rank.label.toUpperCase()}`, '', 'Think NFL. Go Deep. Score Big.'].join('\n');
+  }
+
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+    } catch (err) { /* fall back below */ }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return !!ok;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function openShareDialog(text) {
+    dom.shareText.value = text;
+    openDialog(dom.shareDialog);
+    dom.shareText.focus();
+    dom.shareText.select();
+  }
+
+  async function shareResults() {
+    const summary = state.lastSummary;
+    if (!summary) return;
+    const text = shareTextFor(summary);
+    const copying = copyText(text); // start inside the click so the clipboard keeps user activation
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'GRONKILLION', text });
+        toast((await copying) ? 'Shared, and copied to your clipboard' : 'Shared!');
+        return;
+      } catch (err) {
+        if (await copying) { toast('Results copied to clipboard'); return; }
+        if (err && err.name === 'AbortError') return;
+        openShareDialog(text);
+        return;
+      }
+    }
+    if (await copying) toast('Results copied to clipboard'); else openShareDialog(text);
+  }
+
+  /* ======================================================================
+     14. EVENTS & STARTUP (listeners are bound exactly once)
+     ====================================================================== */
+  function bindEvents() {
+    dom.kickoffBtn.addEventListener('click', () => {
+      Sound.play('click');
+      const target = kickoffTarget();
+      if (target.resume) resumeGame(target.mode); else startNewGame(target.mode);
+    });
+    dom.dailyBtn.addEventListener('click', () => { Sound.play('click'); startNewGame('daily'); });
+    dom.unlimitedBtn.addEventListener('click', () => { Sound.play('click'); startNewGame('unlimited'); });
+    dom.howBtn.addEventListener('click', () => openDialog(dom.howDialog));
+    dom.helpBtn.addEventListener('click', () => openDialog(dom.howDialog));
+    dom.soundBtn.addEventListener('click', () => setSound(!Sound.enabled, true));
+    dom.brandBtn.addEventListener('click', () => {
+      if (state.phase === 'HOME') return;
+      if (state.phase === 'RESULTS') goHome(); else requestExit();
+    });
+    dom.resumeBox.addEventListener('click', (event) => {
+      const btn = event.target.closest('button[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'resume') resumeGame(btn.dataset.mode); else abandonProgress(btn.dataset.mode);
+    });
+
+    dom.answerForm.addEventListener('submit', onSubmit);
+    // Typing is locked during the snap count; the field clears when answering opens.
+    // (Enter arrives as "insertLineBreak"; cancelling it would also cancel the form submit.)
+    dom.answerInput.addEventListener('beforeinput', (e) => { if (state.phase !== 'ANSWERING' && e.inputType !== 'insertLineBreak') e.preventDefault(); });
+    dom.answerInput.addEventListener('keydown', (e) => { if (state.phase !== 'ANSWERING' && e.key && e.key.length === 1) e.preventDefault(); });
+    dom.answerInput.addEventListener('paste', (e) => { if (state.phase !== 'ANSWERING') e.preventDefault(); });
+    dom.answerInput.addEventListener('input', () => {
+      if (state.phase !== 'ANSWERING') { dom.answerInput.value = ''; return; }
+      dom.inputWrap.classList.remove('bad');
+    });
+    dom.submitBtn.addEventListener('click', (e) => { if (dom.submitBtn.getAttribute('aria-disabled') === 'true') { e.preventDefault(); setFeedback('Hold on. Answering opens after the snap.', 'info'); } });
+    dom.skipBtn.addEventListener('click', onSkip);
+    dom.nextBtn.addEventListener('click', onNext);
+
+    dom.replayBtn.addEventListener('click', () => { Sound.play('click'); startNewGame('unlimited'); });
+    dom.shareBtn.addEventListener('click', shareResults);
+    dom.resHomeBtn.addEventListener('click', goHome);
+    dom.shareCopy.addEventListener('click', async () => {
+      if (await copyText(dom.shareText.value)) toast('Copied');
+      else { dom.shareText.focus(); dom.shareText.select(); toast('Press Ctrl+C (or ⌘C) to copy'); }
+    });
+
+    document.addEventListener('visibilitychange', () => { if (document.hidden) saveProgress(); else Timer.check(); });
+    window.addEventListener('focus', () => Timer.check());
+    window.addEventListener('pagehide', saveProgress);
+  }
+
+  function init() {
+    cacheDom();
+    gameField = createField(dom.gameField, 'gf');
+    resultsField = createField(dom.resField, 'rf');
+    buildTierTable();
+    setSound(Store.get('settings', { sound: false }, validSettings).sound, false);
+    bindEvents();
+    document.body.dataset.phase = 'home';
+    renderHome();
+    showScreen('home');
+
+    // Read-only handle for debugging and automated checks.
+    window.GRONKILLION = Object.freeze({
+      version: 1,
+      questions: QUESTIONS,
+      categories: CATEGORIES,
+      normalize,
+      validate: (qid, text) => validate(QUESTION_BY_ID.get(qid), text),
+      dailyQuestionIds: (dateKey) => dailyQuestions(dateKey || utcDateKey()).map((q) => q.id),
+      getState: () => ({
+        phase: state.phase, mode: state.mode, round: state.round, score: state.score,
+        questionIds: state.questions.map((q) => q.id), plays: state.plays.slice(), deadline: state.deadline
+      })
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+</body>
+</html>
