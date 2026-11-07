@@ -35,7 +35,8 @@ A perfect drive is worth 700 points and goes from your own goal line to the oppo
 
 - 40 prompts across 12 categories. Each answer list is complete for its stated scope, with facts through the 2025 season, Super Bowl LX, the 2026 NFL Draft and the Pro Football Hall of Fame Class of 2026.
 - Forgiving answer matching: capitalization, punctuation, apostrophes and suffixes (Jr., III) don't matter; nicknames, team cities, abbreviations, historical franchise names and old stadium names all work; small typos are accepted conservatively. A last name shared by several well-known players asks for a first name.
-- Animated football field with a drive chart, a deadline-based play clock, tiered answer reveals and a touchdown celebration.
+- Retro pixel-art presentation: a night stadium whose crowd reacts to your drive, a pixel field with a running back who runs (or catches a pass) to each new spot, tier lines that sweep ahead of the ball, a segmented play clock, tier mascots, a drive-log chart and a pixel touchdown celebration.
+- Small typos are corrected, but you confirm the correction with a second submit before it locks in.
 - Progress is saved in localStorage, so a refresh resumes the drive. The game still works when storage is blocked.
 - Optional Web Audio sound effects (muted by default) and a shareable results summary that reveals no answers.
 - Keyboard navigation, screen-reader announcements, reduced-motion support and layouts down to phone width.
@@ -48,6 +49,7 @@ build.py         Assembles index.html from src/
 src/shell.html   Page markup
 src/styles.css   Styles
 src/data.js      Question database plus team, stadium and player aliases
+src/sprites.js   Pixel sprites as character grids, rendered once to SVG symbols
 src/engine.js    Game engine: validation, timer, scoring, field, rendering, storage, sound, sharing
 test/unit.py     Answer-validation and data-integrity checks
 test/play.py     End-to-end gameplay checks
@@ -76,4 +78,4 @@ Questions live in `src/data.js` under `GRONK_DATA.questions`. Each one lists its
 
 ---
 
-GRONKILLION is an independent football trivia game and is not affiliated with or endorsed by the NFL. Player and team names are used as factual references only. Fonts: Big Shoulders Display and Barlow (SIL Open Font License), loaded from Google Fonts.
+GRONKILLION is an independent football trivia game and is not affiliated with or endorsed by the NFL. Player and team names are used as factual references only. Font: VT323 (SIL Open Font License), loaded from Google Fonts. All pixel art is original and drawn in code.
