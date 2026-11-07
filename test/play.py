@@ -11,18 +11,11 @@ SHOTS = ROOT / "test" / "shots"
 SHOTS.mkdir(exist_ok=True)
 
 FONT_FILES = {
-    "bsd700": FONTS / "big-shoulders-display/files/big-shoulders-display-latin-700-normal.woff2",
-    "bsd800": FONTS / "big-shoulders-display/files/big-shoulders-display-latin-800-normal.woff2",
-    "bsd900": FONTS / "big-shoulders-display/files/big-shoulders-display-latin-900-normal.woff2",
-    "b400": FONTS / "barlow/files/barlow-latin-400-normal.woff2",
-    "b500": FONTS / "barlow/files/barlow-latin-500-normal.woff2",
-    "b600": FONTS / "barlow/files/barlow-latin-600-normal.woff2",
-    "b700": FONTS / "barlow/files/barlow-latin-700-normal.woff2",
+    "vt323": FONTS / "vt323/files/vt323-latin-400-normal.woff2",
 }
 FONT_CSS = "".join(
     f"@font-face{{font-family:'{fam}';font-weight:{w};font-style:normal;font-display:swap;src:url(https://fonts.gstatic.com/local/{key}.woff2) format('woff2');}}"
-    for key, fam, w in [("bsd700", "Big Shoulders Display", 700), ("bsd800", "Big Shoulders Display", 800), ("bsd900", "Big Shoulders Display", 900),
-                        ("b400", "Barlow", 400), ("b500", "Barlow", 500), ("b600", "Barlow", 600), ("b700", "Barlow", 700)]
+    for key, fam, w in [("vt323", "VT323", 400)]
 )
 
 problems = []
@@ -64,6 +57,36 @@ def answer_for(page, tier_pref):
       for (const t of pref) { const a = q.answers.find(x => x.rarity === t); if (a) return {text: a.canonical, points: a.points, rarity: a.rarity, qid: q.id, type: q.type}; }
       const a = q.answers[0]; return {text: a.canonical, points: a.points, rarity: a.rarity, qid: q.id, type: q.type};
     }""", tier_pref)
+
+def typo_for(page):
+    """A misspelling of a real answer that validate() accepts via its typo matcher."""
+    return page.evaluate("""() => {
+      const G = window.GRONKILLION, s = G.getState();
+      const q = G.questions.find(x => x.id === s.questionIds[s.round]);
+      for (const a of q.answers) {
+        const c = a.canonical;
+        for (let i = 2; i < c.length - 1; i++) {
+          for (const t of [c.slice(0, i) + c[i] + c.slice(i), c.slice(0, i) + c.slice(i + 1)]) {
+            const r = G.validate(q.id, t);
+            if (r.kind === 'accepted' && r.via === 'typo' && r.answer.canonical === c) return {text: t, canonical: c, points: a.points};
+          }
+        }
+      }
+      return null;
+    }""")
+
+SHEET_JS = """() => {
+  const S = GRONK_SPRITES;
+  let h = '<div style="padding:16px;background:#0E1626;color:#E8F1FF;font:16px VT323,monospace">';
+  h += '<div class="wm-chroma" style="width:720px;margin:8px 0 16px">' + S.wordmark(true) + '</div>';
+  h += '<div class="wm-chroma" style="width:240px;margin:0 0 16px">' + S.wordmark(false) + '</div>';
+  S.names().forEach(n => { const z = S.size(n);
+    h += '<div style="display:inline-block;margin:6px;text-align:center;vertical-align:top"><div style="background:#1F6B34;padding:6px">' +
+      S.svg(n).replace('class="spr ', 'style="width:' + z.w * 4 + 'px;height:' + z.h * 4 + 'px" class="spr ') + '</div>' + n + '</div>'; });
+  ['dim', 'hot', 'dense'].forEach(v => h += '<div style="height:120px;margin:6px 0;background:url(' + S.crowd(v) + ') repeat-x 0 0/384px 120px;image-rendering:pixelated"></div>');
+  document.querySelector('main').innerHTML = h + '</div>';
+  document.querySelectorAll('.screen').forEach(e => e.hidden = true);
+}"""
 
 def no_hscroll(page):
     return page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
@@ -113,7 +136,11 @@ def main():
         page.keyboard.press("Enter")
         wait_phase(page, "REVEAL")
         page.wait_for_selector("#reveal:not([hidden])")
-        page.wait_for_timeout(1500)
+        page.wait_for_timeout(950)
+        if ans["rarity"] in ("all_pro", "hall_of_famer", "gronkillion"):
+            check(page.locator("#gameField [data-role='qb']").evaluate("e => getComputedStyle(e).opacity") == "1", "big play: quarterback sprite is on the field")
+            page.screenshot(path=str(SHOTS / "17_bigplay_throw.png"))
+        page.wait_for_timeout(1600)
         s = gstate(page)
         check(s["score"] == ans["points"], f"round 1 scored once: {s['score']} == {ans['points']} ({ans['rarity']}, {ans['text']})")
         page.screenshot(path=str(SHOTS / "05_reveal.png"), full_page=True)
@@ -150,6 +177,11 @@ def main():
                 page.fill("#answerInput", ans["text"].lower())
                 page.keyboard.press("Enter")
             wait_phase(page, "REVEAL")
+            if rnd == 5:
+                page.wait_for_selector("#reveal:not([hidden])")
+                page.wait_for_timeout(560)
+                check(page.locator("#gameField .tl").count() == 6, "six tier lines sweep ahead of the ball")
+                page.screenshot(path=str(SHOTS / "18_tierlines_advance.png"))
             total += ans["points"]
             check(gstate(page)["score"] == total, f"round {rnd} score {gstate(page)['score']} == {total} ({ans['text']})")
             if rnd == 5:
@@ -158,7 +190,7 @@ def main():
                 page.wait_for_timeout(300)
                 page.set_viewport_size({"width": 1440, "height": 900})
         page.wait_for_timeout(600)
-        check(page.locator("#nextBtn span").inner_text().lower() == "see final results", "last play button says See Final Results")
+        check(page.locator("#nextBtn span").inner_text().lower().startswith("final whistle"), "last play button says Final Whistle")
         page.click("#nextBtn")
         wait_phase(page, "RESULTS")
         page.wait_for_timeout(1800)
@@ -166,7 +198,10 @@ def main():
         res_score = int(page.inner_text("#resScore"))
         check(res_score == total, f"results score {res_score} == {total}")
         check(page.locator("#resPlays li").count() == 7, "results list all seven plays")
-        page.click("#shareBtn")
+        check(page.locator("#resLog .log-col").count() == 7, "drive log charts all seven plays")
+        check(page.locator("#resLegend tr.is-you").count() == 1, "rank ladder highlights exactly one row")
+        page.locator(".res-log").screenshot(path=str(SHOTS / "20_results_drive_log.png"))
+        page.click("#copyBtn")
         page.wait_for_timeout(400)
         clip = page.evaluate("navigator.clipboard.readText()")
         print("   share text:\n" + "\n".join("     " + l for l in clip.splitlines()))
@@ -175,6 +210,12 @@ def main():
         # no answers leak into the share text
         answered = [pl["canonical"] for pl in gstate(page)["plays"] if pl and pl.get("canonical")]
         check(not any(name.lower() in clip.lower() for name in answered), "share text reveals no answers")
+        page.click("#shareBtn")
+        page.wait_for_timeout(400)
+        if page.locator("#shareDialog[open]").count():
+            check("Score:" in page.input_value("#shareText"), "share dialog shows the summary when there is no share sheet")
+            page.click("#shareClose")
+            page.wait_for_timeout(150)
         # play again -> new unlimited, avoid immediate repeats
         page.click("#replayBtn")
         wait_phase(page, "PREVIEW", 6000)
@@ -257,7 +298,7 @@ def main():
             page.keyboard.press("Enter")
             wait_phase(page, "REVEAL")
             if rnd == 7:
-                page.wait_for_timeout(2000)
+                page.wait_for_timeout(2700)
                 check(page.inner_text("#gameField [data-role='zone']") == "TOUCHDOWN", "zone label reads TOUCHDOWN at 700")
                 check(page.locator("#confetti").is_visible(), "touchdown confetti fires")
                 page.screenshot(path=str(SHOTS / "09_touchdown.png"))
@@ -267,6 +308,60 @@ def main():
         page.wait_for_timeout(1700)
         check(int(page.inner_text("#resScore")) == 700, "perfect drive scores 700")
         check(page.inner_text("#resRank") == "GRONKILLION LEGEND", "700 earns GRONKILLION LEGEND")
+        ctx.close()
+
+        # ---------------- Autocorrect confirm ----------------
+        print("\n[autocorrect confirm]")
+        ctx, page = new_page(browser, logs, viewport={"width": 1024, "height": 860})
+        page.goto(URL)
+        page.wait_for_function("window.GRONKILLION")
+        page.click("#unlimitedBtn")
+        wait_phase(page, "ANSWERING", 10000)
+        check(no_hscroll(page), "game: no horizontal scroll at 1024px (non-emulated)")
+        tested = False
+        for rnd in range(1, 8):
+            wait_phase(page, "ANSWERING", 10000)
+            typo = typo_for(page)
+            if typo:
+                before = gstate(page)["score"]
+                page.fill("#answerInput", typo["text"])
+                page.keyboard.press("Enter")
+                page.wait_for_timeout(200)
+                chip = page.locator("#typoChip")
+                check(gstate(page)["phase"] == "ANSWERING", f"typo {typo['text']!r} is not locked in on the first submit")
+                check(chip.is_visible() and typo["canonical"] in chip.inner_text(), f"confirm chip shows {typo['text']!r} -> {typo['canonical']!r}")
+                page.screenshot(path=str(SHOTS / "19_autocorrect_confirm.png"))
+                page.locator("#answerInput").press_sequentially("x")
+                check(not chip.is_visible(), "editing the text clears the chip")
+                page.fill("#answerInput", typo["text"])
+                page.wait_for_timeout(320)
+                page.keyboard.press("Enter")
+                page.wait_for_timeout(150)
+                check(chip.is_visible() and gstate(page)["phase"] == "ANSWERING", "after an edit, the typo needs confirming again")
+                page.wait_for_timeout(320)
+                page.keyboard.press("Enter")
+                wait_phase(page, "REVEAL")
+                check(gstate(page)["score"] == before + typo["points"], f"second submit confirms and scores +{typo['points']}")
+                tested = True
+                break
+            ans = answer_for(page, ["chalk"])
+            page.fill("#answerInput", ans["text"])
+            page.keyboard.press("Enter")
+            wait_phase(page, "REVEAL")
+            page.wait_for_timeout(500)
+            page.click("#nextBtn")
+        check(tested, "found a typo the validator corrects in this drive")
+        ctx.close()
+
+        # ---------------- Sprite sheet (review only; nothing shipped) ----------------
+        print("\n[sprite sheet]")
+        ctx, page = new_page(browser, logs, viewport={"width": 1100, "height": 900})
+        page.goto(URL)
+        page.wait_for_function("window.GRONKILLION")
+        page.evaluate(SHEET_JS)
+        page.wait_for_timeout(200)
+        page.screenshot(path=str(SHOTS / "21_sprite_sheet.png"), full_page=True)
+        check(page.evaluate("GRONK_SPRITES.names().length") >= 25, "sprite sheet renders every sprite")
         ctx.close()
 
         # ---------------- localStorage unavailable ----------------
@@ -301,6 +396,7 @@ def main():
         wait_phase(page, "REVEAL")
         page.wait_for_timeout(300)
         check(page.locator("#reveal").is_visible(), "reveal works with reduced motion")
+        check(page.evaluate("document.getAnimations().length") == 0, "reduced motion: no running animations on the reveal")
         page.screenshot(path=str(SHOTS / "14_reveal_reduced.png"))
         # leave mid-game via brand button -> confirm dialog
         page.click("#nextBtn")

@@ -6,7 +6,8 @@ SRC = ROOT / "src"
 
 shell = (SRC / "shell.html").read_text(encoding="utf-8")
 css = (SRC / "styles.css").read_text(encoding="utf-8")
-js = (SRC / "data.js").read_text(encoding="utf-8") + "\n\n" + (SRC / "engine.js").read_text(encoding="utf-8")
+# Order matters: data and sprites are globals the engine reads at startup.
+js = "\n\n".join((SRC / name).read_text(encoding="utf-8") for name in ("data.js", "sprites.js", "engine.js"))
 
 assert "/*__CSS__*/" in shell and "/*__JS__*/" in shell
 assert "</script" not in js.lower(), "inline script must not contain a closing script tag"

@@ -745,150 +745,282 @@
   };
 
   /* ======================================================================
-     8. FOOTBALL FIELD (SVG: end zones, yard lines, numbers, hash marks,
-        line of scrimmage, drive chart, football marker)
+     8. FOOTBALL FIELD (pixel-art SVG: turf, yard lines, numbers, end zones,
+        yard ruler, ball carrier, QB, pass, tier lines, drive bars)
      ====================================================================== */
-  const FIELD_W = 1200;
-  const FIELD_H = 270;
-  const fieldX = (progress) => 100 + progress * 10; // 10 units per yard, goal lines at 100 and 1100
+  const SPR = GRONK_SPRITES;
+  const FIELD_W = 240;
+  const FIELD_H = 80;
+  const TURF_Y = 12;         // ruler strip above the turf
+  const TURF_H = 64;
+  const FEET_Y = 59;         // where sprites stand
+  const fieldX = (progress) => 20 + progress * 2; // 2 units per yard, goal lines at 20 and 220
+  const yardsFor = (points) => (points * 100) / CONFIG.MAX_SCORE;
+  const fmtYards = (v) => { const r = Math.round(v * 10) / 10; return Number.isInteger(r) ? String(r) : r.toFixed(1); };
+  const BIG_PLAY = new Set(['all_pro', 'hall_of_famer', 'gronkillion']);
+  const ZONE_CAPS = { chains: 'Own 25', midfield: 'Midfield', redzone: 'Red Zone', goalline: 'Goal Line' };
+  const tx = (x, y) => `translate(${x}px, ${y || 0}px)`;
+  const rect = (x, y, w, h, fill) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`;
+  const run = (x, y, w, h) => `M${x} ${y}h${w}v${h}h-${w}z`;
 
-  function fieldSVG(prefix) {
-    const H = FIELD_H;
-    const out = [];
-    out.push(`<svg viewBox="0 0 ${FIELD_W} ${H}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">`);
-    out.push(`<defs>
-      <pattern id="${prefix}-ezl" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="22" height="22" fill="#12305A"/><rect width="9" height="22" fill="#18406F"/></pattern>
-      <pattern id="${prefix}-ezr" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="22" height="22" fill="#5C400A"/><rect width="9" height="22" fill="#74530F"/></pattern>
-    </defs>`);
-    for (let i = 0; i < 20; i++) out.push(`<rect x="${100 + i * 50}" y="0" width="50" height="${H}" fill="${i % 2 ? '#227A3D' : '#1E6F37'}"/>`);
-    out.push(`<rect x="0" y="0" width="100" height="${H}" fill="url(#${prefix}-ezl)"/>`);
-    out.push(`<rect x="1100" y="0" width="100" height="${H}" fill="url(#${prefix}-ezr)"/>`);
-    out.push(`<text class="ez-text ez-l" x="50" y="${H / 2}" transform="rotate(-90 50 ${H / 2})">GO DEEP</text>`);
-    out.push(`<text class="ez-text ez-r" x="1150" y="${H / 2}" transform="rotate(90 1150 ${H / 2})">SCORE BIG</text>`);
-    for (let yd = 5; yd < 100; yd += 5) {
-      const x = fieldX(yd);
-      out.push(`<line x1="${x}" y1="4" x2="${x}" y2="${H - 4}" stroke="rgba(247,249,252,.82)" stroke-width="${yd % 10 === 0 ? 3.5 : 2}"/>`);
-    }
+  function checker(x0, w, a, b) {
+    let d = '';
+    for (let y = 0; y < TURF_H; y += 4) for (let x = 0; x < w; x += 4) if (((x + y) / 4) % 2) d += run(x0 + x, TURF_Y + y, 4, 4);
+    return rect(x0, TURF_Y, w, TURF_H, a) + `<path fill="${b}" d="${d}"/>`;
+  }
+
+  function fieldSVG() {
+    const o = [];
+    const bottom = TURF_Y + TURF_H;
+    o.push(`<svg viewBox="0 0 ${FIELD_W} ${FIELD_H}" shape-rendering="crispEdges" aria-hidden="true" focusable="false">`);
+    o.push(rect(0, 0, FIELD_W, TURF_Y, '#0B1322'), rect(0, bottom, FIELD_W, FIELD_H - bottom, '#0B1322'));
+    for (let i = 0; i < 20; i++) o.push(rect(20 + i * 10, TURF_Y, 10, TURF_H, i % 2 ? '#2A8443' : '#1F6B34'));
+    o.push(checker(0, 20, '#12305A', '#18406F'), checker(220, 20, '#A8771A', '#C99327'));
+    const ezL = 'GO DEEP';
+    const ezR = 'SCORE BIG';
+    o.push(`<g transform="translate(8 ${TURF_Y + TURF_H / 2 + Math.round(SPR.textWidth(ezL) / 2)}) rotate(-90)"><path fill="#C9D3E2" d="${SPR.textPath(ezL, 0, 0)}"/></g>`);
+    o.push(`<g transform="translate(233 ${TURF_Y + TURF_H / 2 - Math.round(SPR.textWidth(ezR) / 2)}) rotate(90)"><path fill="#3A2A06" d="${SPR.textPath(ezR, 0, 0)}"/></g>`);
+    // yard lines, goal lines, hash marks
+    let lines5 = '';
+    let lines10 = '';
     let hash = '';
-    const inTop = Math.round(H * 0.37);
-    const inBot = Math.round(H * 0.63) - 10;
     for (let yd = 1; yd < 100; yd++) {
-      if (yd % 5 === 0) continue;
       const x = fieldX(yd);
-      hash += `M${x} 6v12M${x} ${H - 18}v12M${x} ${inTop}v10M${x} ${inBot}v10`;
+      if (yd % 10 === 0) lines10 += run(x, TURF_Y, 1, TURF_H);
+      else if (yd % 5 === 0) lines5 += run(x, TURF_Y, 1, TURF_H);
+      else hash += run(x, TURF_Y + 1, 1, 2) + run(x, bottom - 3, 1, 2) + run(x, TURF_Y + 25, 1, 1) + run(x, TURF_Y + 38, 1, 1);
     }
-    out.push(`<path d="${hash}" stroke="rgba(247,249,252,.7)" stroke-width="2" fill="none"/>`);
-    out.push(`<path d="M100 0V${H}M1100 0V${H}" stroke="#F7F9FC" stroke-width="5"/>`);
-    out.push(`<rect x="2" y="2" width="${FIELD_W - 4}" height="${H - 4}" fill="none" stroke="#F7F9FC" stroke-width="4"/>`);
+    o.push(`<path fill="rgba(232,241,255,.55)" d="${lines5}"/>`, `<path fill="rgba(232,241,255,.85)" d="${lines10}"/>`, `<path fill="rgba(232,241,255,.6)" d="${hash}"/>`);
+    o.push(`<path fill="#F4F7FF" d="${run(19, TURF_Y, 2, TURF_H)}${run(219, TURF_Y, 2, TURF_H)}"/>`);
+    // yard numbers (3×5 pixel digits) near both sidelines
+    let nums = '';
     for (let k = 1; k <= 9; k++) {
       const yd = k * 10;
       const x = fieldX(yd);
       const label = String(yd <= 50 ? yd : 100 - yd);
-      [H - 44, 44].forEach((yc, row) => {
-        const rot = row === 1 ? ` transform="rotate(180 ${x} ${yc})"` : '';
-        out.push(`<g${rot}><text class="yd-num" x="${x - 5}" y="${yc}" text-anchor="end" dominant-baseline="central">${label[0]}</text><text class="yd-num" x="${x + 5}" y="${yc}" text-anchor="start" dominant-baseline="central">${label[1]}</text></g>`);
-        if (yd !== 50) {
-          const left = yd < 50;
-          const ax = left ? x - 40 : x + 40;
-          const pts = left ? `${ax - 6},${yc} ${ax + 6},${yc - 8} ${ax + 6},${yc + 8}` : `${ax + 6},${yc} ${ax - 6},${yc - 8} ${ax - 6},${yc + 8}`;
-          out.push(`<polygon points="${pts}" fill="rgba(247,249,252,.85)"/>`);
-        }
-      });
+      [TURF_Y + 5, bottom - 10].forEach((y) => { nums += SPR.textPath(label[0], x - 4, y) + SPR.textPath(label[1], x + 2, y); });
     }
-    out.push('<g class="drive" data-role="drive"></g>');
-    out.push(`<g class="gline" data-role="gline" style="opacity:0;transform:translate(100px,0px)"><line x1="0" y1="8" x2="0" y2="${H - 8}"/></g>`);
-    out.push(`<g class="ball-g no-anim" data-role="ball" style="transform:translate(100px,0px)">
-      <line class="los" x1="0" y1="6" x2="0" y2="${H - 6}"/>
-      <circle class="ball-ring" cx="0" cy="${H / 2}" r="40"/>
-      <ellipse cx="6" cy="${H / 2 + 24}" rx="30" ry="7" fill="rgba(0,0,0,.35)"/>
-      <use href="#sym-ball" x="-42" y="${H / 2 - 27}" width="84" height="54" transform="rotate(-12 0 ${H / 2})"/>
-    </g>`);
-    out.push('</svg>');
-    return out.join('');
+    o.push(`<path fill="rgba(244,247,255,.8)" d="${nums}"/>`);
+    // yard ruler along the top sideline
+    let t1 = '';
+    let t5 = '';
+    let t10 = '';
+    for (let yd = 0; yd <= 100; yd++) {
+      const x = fieldX(yd);
+      if (yd % 10 === 0) t10 += run(x, TURF_Y - 5, 1, 5);
+      else if (yd % 5 === 0) t5 += run(x, TURF_Y - 3, 1, 3);
+      else t1 += run(x, TURF_Y - 2, 1, 2);
+    }
+    o.push(`<path fill="#2E4A72" d="${t1}"/>`, `<path fill="#5E7899" d="${t5}"/>`, `<path fill="#8FA3C4" d="${t10}"/>`);
+    o.push('<g class="drive" data-role="drive"></g>');
+    o.push(`<g class="gline" data-role="gline" style="opacity:0;transform:translate(20px,0px)"><line x1=".5" y1="${TURF_Y}" x2=".5" y2="${bottom}"/></g>`);
+    o.push('<g data-role="tiers"></g>');
+    o.push(`<g class="qb" data-role="qb" style="opacity:0;transform:translate(20px,0px)"><g transform="translate(-8 ${FEET_Y - 20})">${SPR.frames(['qb-set', 'qb-throw'])}</g></g>`);
+    o.push(`<g class="carrier" data-role="carrier" style="transform:translate(20px,0px)">` +
+      `<g class="you-flag">${rect(0, 1, 1, TURF_Y - 1, '#A3FF12')}${rect(1, 1, 13, 7, '#A3FF12')}<path fill="#07130A" d="${SPR.textPath('YOU', 2, 2)}"/>` +
+      `<path fill="rgba(163,255,18,.45)" d="${(() => { let d = ''; for (let y = TURF_Y + 1; y < FEET_Y - 21; y += 3) d += run(0, y, 1, 1); return d; })()}"/></g>` +
+      `<g class="runner" data-role="runner" transform="translate(-8 ${FEET_Y - 20})">` +
+      `<g class="set-idle">${SPR.frames(['rb-idle1', 'rb-idle2'])}</g><g class="set-run">${SPR.frames(['rb-run1', 'rb-run2', 'rb-run3', 'rb-run4'])}</g>` +
+      `<use class="tuck" href="#spr-rb-tuck" width="16" height="14"/></g>` +
+      `<g data-role="dust" transform="translate(-15 ${FEET_Y - 5})">${SPR.frames(['dust-1', 'dust-2', 'dust-3'])}</g></g>`);
+    o.push(`<g data-role="pass" style="opacity:0"><g data-role="passy"><g class="spin" transform="translate(-4 -3)">${SPR.frames(['ball-1', 'ball-2', 'ball-3'])}</g></g></g>`);
+    o.push(`<g data-role="pflag" style="opacity:0"><g transform="translate(-6 ${FEET_Y - 12})"><use href="#spr-flag" width="12" height="12"/></g></g>`);
+    o.push('</svg>');
+    return o.join('');
   }
 
-  function driveMarkup(plays, newIndex) {
+  /** Thin tier-coloured bars, one lane per play: the drive's history. */
+  function driveMarkup(plays) {
     let acc = 0;
-    let out = '';
+    let bars = '';
     plays.forEach((p, i) => {
       if (!p) return;
-      const y = 76 + i * 20; // one lane per play, between the two rows of yard numbers
+      const y = TURF_Y + 14 + i * 4;
       const x0 = fieldX(fieldProgress(acc));
-      const isNew = i === newIndex ? ' is-new' : '';
       if (p.points > 0 && TIERS[p.rarity]) {
         acc += p.points;
-        const x1 = fieldX(fieldProgress(acc));
-        const head = Math.min(12, (x1 - x0) * 0.6);
-        const labelLeft = x1 > 1050;
-        const lx = labelLeft ? x0 - 8 : x1 + 6;
-        out += `<g class="drive-play${isNew}" data-tier="${p.rarity}">` +
-          `<path class="drive-arrow" d="M${x0} ${y - 5}H${x1 - head}V${y - 9}L${x1} ${y}L${x1 - head} ${y + 9}V${y + 5}H${x0}Z"/>` +
-          `<text class="drive-label" x="${lx}" y="${y}" text-anchor="${labelLeft ? 'end' : 'start'}" dominant-baseline="central">+${p.points}</text></g>`;
+        const w = Math.max(1, Math.round(fieldX(fieldProgress(acc)) - x0));
+        bars += `<rect class="drive-bar" data-i="${i}" data-tier="${p.rarity}" x="${Math.round(x0)}" y="${y}" width="${w}" height="2"/>`;
       } else {
-        out += `<g class="drive-miss${isNew}"><path d="M${x0 - 6} ${y - 6}L${x0 + 6} ${y + 6}M${x0 + 6} ${y - 6}L${x0 - 6} ${y + 6}"/></g>`;
+        bars += `<path class="drive-miss" d="${run(Math.round(x0) - 1, y - 1, 1, 1)}${run(Math.round(x0) + 1, y - 1, 1, 1)}${run(Math.round(x0), y, 1, 1)}${run(Math.round(x0) - 1, y + 1, 1, 1)}${run(Math.round(x0) + 1, y + 1, 1, 1)}"/>`;
       }
     });
-    return out;
+    return bars;
   }
 
-  function chipsMarkup(plays, current) {
+  /** HUD pips: one square per play, filled with its tier colour. */
+  function pipsMarkup(plays, current) {
     let out = '';
     for (let i = 0; i < CONFIG.ROUNDS; i++) {
       const p = plays[i];
       if (p) {
         const scored = p.points > 0 && TIERS[p.rarity];
-        const tier = scored ? p.rarity : 'miss';
-        const label = scored ? `+${p.points}` : (p.status === 'skipped' ? 'SKIP' : '0');
         const sr = scored ? `${TIERS[p.rarity].label}, ${p.points} points` : (p.status === 'skipped' ? 'skipped, no points' : 'no gain');
-        out += `<li class="chip" data-state="done" data-tier="${tier}"><span class="c-num" aria-hidden="true">P${i + 1}</span><span class="c-val" aria-hidden="true">${label}</span><span class="sr-only">Play ${i + 1}: ${sr}</span></li>`;
+        out += `<li class="pip" data-state="done" data-tier="${scored ? p.rarity : 'miss'}"><span class="sr-only">Play ${i + 1}: ${sr}</span></li>`;
       } else if (i === current) {
-        out += `<li class="chip" data-state="current"><span class="c-num" aria-hidden="true">P${i + 1}</span><span class="c-val" aria-hidden="true">LIVE</span><span class="sr-only">Play ${i + 1}: in progress</span></li>`;
+        out += `<li class="pip" data-state="current"><span class="sr-only">Play ${i + 1}: in progress</span></li>`;
       } else {
-        out += `<li class="chip" data-state="future"><span class="c-num" aria-hidden="true">P${i + 1}</span><span class="c-val" aria-hidden="true">—</span><span class="sr-only">Play ${i + 1}: not played yet</span></li>`;
+        out += `<li class="pip" data-state="future"><span class="sr-only">Play ${i + 1}: not played yet</span></li>`;
       }
     }
     return out;
   }
 
-  function createField(wrap, prefix) {
+  function createField(wrap, hud) {
     const box = wrap.querySelector('[data-role="field"]');
-    box.innerHTML = fieldSVG(prefix);
-    const ball = box.querySelector('[data-role="ball"]');
-    const drive = box.querySelector('[data-role="drive"]');
-    const gline = box.querySelector('[data-role="gline"]');
+    box.innerHTML = fieldSVG();
+    const part = (role) => box.querySelector(`[data-role="${role}"]`);
+    const carrier = part('carrier');
+    const runner = part('runner');
+    const dust = part('dust');
+    const drive = part('drive');
+    const gline = part('gline');
+    const tiersG = part('tiers');
+    const qb = part('qb');
+    const pass = part('pass');
+    const passY = part('passy');
+    const pflag = part('pflag');
+    const overlay = wrap.querySelector('[data-role="overlay"]');
     const zoneEl = wrap.querySelector('[data-role="zone"]');
     const markerEl = wrap.querySelector('[data-role="marker"]');
-    const yardsEl = wrap.querySelector('[data-role="yards"]');
-    const scoreEl = wrap.querySelector('[data-role="score"]');
-    const chipsEl = wrap.querySelector('[data-role="chips"]');
-    let shownScore = 0;
+    const zonesEl = wrap.querySelector('[data-role="zones"]');
+    zonesEl.innerHTML = ZONES.filter((z) => ZONE_CAPS[z.key]).map((z, i) =>
+      `<span class="zone-cap z-${z.key} row-${i % 2}" data-min="${z.min}" style="left:${(((fieldX(z.min) + 0.5) / FIELD_W) * 100).toFixed(2)}%">${ZONE_CAPS[z.key]}</span>`).join('');
+    const caps = Array.from(zonesEl.children);
+    let shownProgress = 0;
+    let anims = [];
+    let timers = [];
+
+    const later = (fn, ms) => { timers.push(setTimeout(fn, ms)); };
+    const anim = (el, keyframes, opts) => {
+      if (!el.animate) return null;
+      const a = el.animate(keyframes, opts);
+      anims.push(a);
+      return a;
+    };
+    function stop() {
+      timers.forEach(clearTimeout);
+      timers = [];
+      anims.forEach((a) => { try { a.cancel(); } catch (err) { /* already gone */ } });
+      anims = [];
+      runner.classList.remove('is-running', 'no-ball');
+      qb.classList.remove('thrown');
+      qb.style.opacity = '0';
+      pass.style.opacity = '0';
+      pflag.style.opacity = '0';
+      tiersG.innerHTML = '';
+      overlay.innerHTML = '';
+    }
+    function puff() {
+      Array.from(dust.children).forEach((f, i) => anim(f, [{ opacity: 1 }, { opacity: 1 }], { duration: 110, delay: i * 110 }));
+    }
+    function dropFlag(x, animate) {
+      pflag.style.transform = tx(x + 9);
+      pflag.style.opacity = '1';
+      if (animate) anim(pflag, [{ transform: tx(x + 9, -34) }, { transform: tx(x + 9) }], { duration: 380, easing: 'cubic-bezier(.5,0,1,.6)' });
+    }
+
+    /** Tier lines ahead of the ball, the run (or pass) to the earned one, then the others fade. */
+    function playGain(play, p0, p1, newIndex) {
+      const x0 = fieldX(p0);
+      const x1 = fieldX(p1);
+      const big = BIG_PLAY.has(play.rarity);
+      const earned = TIER_ORDER.indexOf(play.rarity);
+      const rows = TIER_ORDER.map((k, i) => ({ k, i, x: fieldX(Math.min(100, p0 + yardsFor(TIERS[k].points))) }));
+      tiersG.innerHTML = rows.map((r) => `<g class="tl" data-tier="${r.k}" style="transform:${tx(r.x)}"><line x1=".5" y1="${TURF_Y}" x2=".5" y2="${TURF_Y + TURF_H}"/></g>`).join('');
+      overlay.innerHTML = rows.map((r) => {
+        const left = ((r.x + 0.5) / FIELD_W) * 100;
+        const top = ((TURF_Y + 6 + (5 - r.i) * 10.4) / FIELD_H) * 100;
+        return `<span class="tl-label${left > 62 ? ' flip' : ''}" data-tier="${r.k}" style="left:${left.toFixed(2)}%;top:${top.toFixed(2)}%">${escapeHTML(TIERS[r.k].label)} · ${TIERS[r.k].points}</span>`;
+      }).join('');
+      const lines = Array.from(tiersG.children);
+      const labels = Array.from(overlay.children);
+      [lines, labels].forEach((list) => list.forEach((el, i) =>
+        anim(el, [{ opacity: 0 }, { opacity: 1 }], { duration: 160, delay: i * 55, easing: 'steps(2, end)', fill: 'forwards' })));
+
+      const t0 = 400;
+      const D = Math.round(Math.min(1250, Math.max(560, 420 + (p1 - p0) * 58)));
+      const bar = drive.querySelector(`[data-i="${newIndex}"]`);
+      if (bar) anim(bar, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: D, delay: t0, easing: big ? 'linear' : 'cubic-bezier(.25,.6,.35,1)', fill: 'backwards' });
+      carrier.style.transform = tx(x1);
+      anim(carrier, [{ transform: tx(x0) }, { transform: tx(x1) }], { duration: D, delay: t0, easing: big ? 'linear' : 'cubic-bezier(.25,.6,.35,1)', fill: 'backwards' });
+      later(() => runner.classList.add('is-running'), t0);
+
+      if (big) {
+        // Quarterback drops in behind the line, throws a spiral that lands on the receiver's run.
+        runner.classList.add('no-ball');
+        qb.style.transform = tx(x0 - 7);
+        anim(qb, [{ opacity: 0 }, { opacity: 1 }], { duration: 120, delay: 160, easing: 'steps(2, end)', fill: 'forwards' });
+        const throwAt = t0 + 240;
+        const flight = D - 240;
+        const yHand = FEET_Y - 19;
+        const yCatch = FEET_Y - 10;
+        const apex = Math.min(30, 10 + (x1 - x0) * 0.6);
+        later(() => qb.classList.add('thrown'), throwAt);
+        anim(pass, [{ opacity: 1, transform: tx(x0 - 4, yHand) }, { opacity: 1, transform: tx(x1 + 3, yCatch) }], { duration: flight, delay: throwAt, easing: 'linear', fill: 'forwards' });
+        anim(passY, [
+          { transform: tx(0, 0), easing: 'cubic-bezier(.2,.6,.4,1)' },
+          { transform: tx(0, -apex), offset: 0.5, easing: 'cubic-bezier(.6,0,.8,.4)' },
+          { transform: tx(0, 0) }
+        ], { duration: flight, delay: throwAt });
+        anim(qb, [{ opacity: 1 }, { opacity: 0 }], { duration: 300, delay: t0 + D + 500, easing: 'steps(3, end)', fill: 'forwards' });
+      }
+
+      later(() => {
+        runner.classList.remove('is-running', 'no-ball');
+        anims.filter((a) => a.effect && a.effect.target === pass).forEach((a) => a.cancel());
+        puff();
+        lines.forEach((el, i) => {
+          if (i === earned) { el.classList.add('earned'); labels[i].classList.add('earned'); return; }
+          anim(el, [{ opacity: 1 }, { opacity: 0 }], { duration: 360, easing: 'steps(3, end)', fill: 'forwards' });
+          anim(labels[i], [{ opacity: 1 }, { opacity: 0 }], { duration: 360, easing: 'steps(3, end)', fill: 'forwards' });
+        });
+        [lines[earned], labels[earned]].forEach((el) => anim(el, [{ opacity: 1 }, { opacity: 0 }], { duration: 500, delay: 2200, easing: 'steps(4, end)', fill: 'forwards' }));
+      }, t0 + D);
+      return t0 + D;
+    }
+
     return {
       render(opts) {
         const o = Object.assign({ plays: [], current: -1, animate: false, live: false, newIndex: -1 }, opts);
+        stop();
         const score = totalScore(o.plays);
         const progress = fieldProgress(score);
-        const instant = !o.animate || prefersReducedMotion();
-        ball.classList.toggle('no-anim', instant);
-        gline.style.transition = instant ? 'none' : '';
-        ball.style.transform = `translate(${fieldX(progress)}px, 0px)`;
+        const reduced = prefersReducedMotion();
+        const instant = !o.animate || reduced;
+        const play = o.newIndex >= 0 ? o.plays[o.newIndex] : null;
+        const scored = !!(play && play.points > 0 && TIERS[play.rarity]);
+        let arriveMs = 0;
         box.dataset.live = o.live ? '1' : '0';
+        gline.style.transition = instant ? 'none' : '';
         if (o.live && progress < 100) {
           gline.style.opacity = '1';
-          gline.style.transform = `translate(${fieldX(Math.min(100, progress + 100 / 7))}px, 0px)`;
+          gline.style.transform = tx(fieldX(Math.min(100, progress + 100 / CONFIG.ROUNDS)));
         } else {
           gline.style.opacity = '0';
         }
-        drive.innerHTML = driveMarkup(o.plays, instant ? -1 : o.newIndex);
+        drive.innerHTML = driveMarkup(o.plays);
         const zone = zoneFor(progress);
         zoneEl.textContent = zone.label;
         zoneEl.dataset.zone = zone.key;
         markerEl.textContent = yardMarker(progress);
-        yardsEl.textContent = yardsText(progress);
-        animateNumber(scoreEl, instant ? score : shownScore, score);
-        shownScore = score;
+        document.body.dataset.zone = zone.key;
+        caps.forEach((c) => c.classList.toggle('passed', progress >= Number(c.dataset.min)));
+        if (hud) {
+          hud.pips.innerHTML = pipsMarkup(o.plays, o.current);
+          animateNumber(hud.yards, instant ? progress : shownProgress, progress, 900, 1);
+        }
         box.setAttribute('aria-label', `Football field. ${zone.label}. Ball at ${yardMarker(progress).toLowerCase()}, ${yardsText(progress)} from your goal line. ${score} of ${CONFIG.MAX_SCORE} points.`);
-        chipsEl.innerHTML = chipsMarkup(o.plays, o.current);
-        return { score, progress, zone };
+        if (play && o.animate && !scored) {
+          carrier.style.transform = tx(fieldX(progress));
+          dropFlag(fieldX(progress), !reduced);
+        } else if (instant || !scored) {
+          carrier.style.transform = tx(fieldX(progress));
+        } else {
+          arriveMs = playGain(play, fieldProgress(score - play.points), progress, o.newIndex);
+        }
+        shownProgress = progress;
+        return { score, progress, zone, arriveMs };
       }
     };
   }
@@ -902,6 +1034,8 @@
     el.classList.add('flash');
   }
 
+  /** Pixel confetti (square particles only) plus pixel fireworks, drawn on a
+   *  low-resolution canvas that CSS scales up with crisp pixels. */
   const Confetti = {
     raf: 0,
     run(duration) {
@@ -910,34 +1044,59 @@
       const canvas = document.getElementById('confetti');
       const ctx = canvas.getContext && canvas.getContext('2d');
       if (!ctx) return;
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const W = window.innerWidth;
-      const H = window.innerHeight;
-      canvas.width = Math.floor(W * dpr);
-      canvas.height = Math.floor(H * dpr);
+      const P = 4; // one canvas pixel = 4 CSS pixels
+      const W = Math.ceil(window.innerWidth / P);
+      const H = Math.ceil(window.innerHeight / P);
+      canvas.width = W;
+      canvas.height = H;
       canvas.hidden = false;
-      const colors = ['#FFC857', '#A3FF12', '#F7F9FC', '#B47CFF', '#4DA3FF', '#FF9F43'];
-      const parts = Array.from({ length: 170 }, (_, i) => ({
-        x: Math.random() * W, y: -20 - Math.random() * H * 0.6,
-        vx: (Math.random() - 0.5) * 3.2, vy: 2 + Math.random() * 3.5,
-        w: 6 + Math.random() * 6, h: 9 + Math.random() * 9,
-        r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.28, c: colors[i % colors.length]
+      ctx.imageSmoothingEnabled = false;
+      const colors = ['#FFC857', '#A3FF12', '#F3E9D2', '#FF4D57', '#4DA3FF', '#B47CFF', '#FF9F43'];
+      const bits = Array.from({ length: 150 }, (_, i) => ({
+        x: Math.random() * W, y: -Math.random() * H * 0.8,
+        vx: (Math.random() - 0.5) * 0.35, vy: 0.3 + Math.random() * 0.5,
+        s: Math.random() < 0.3 ? 2 : 1, c: colors[i % colors.length], ph: Math.random() * 6.28
+      }));
+      const bursts = Array.from({ length: 7 }, (_, i) => ({
+        at: 120 + i * 430 + Math.random() * 180, x: W * (0.15 + Math.random() * 0.7), y: H * (0.1 + Math.random() * 0.28),
+        c: colors[(i * 3) % colors.length], parts: null
       }));
       cancelAnimationFrame(this.raf);
       const t0 = performance.now();
+      let last = t0;
       const frame = (now) => {
         const t = now - t0;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const k = Math.min(3, (now - last) / 16.7);
+        last = now;
         ctx.clearRect(0, 0, W, H);
-        ctx.globalAlpha = t > total - 800 ? Math.max(0, (total - t) / 800) : 1;
-        parts.forEach((p) => {
-          p.x += p.vx; p.y += p.vy; p.vy += 0.03; p.r += p.vr;
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.r);
-          ctx.fillStyle = p.c;
-          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r)));
-          ctx.restore();
+        ctx.globalAlpha = t > total - 700 ? (t > total - 350 ? 0.35 : 0.7) : 1;
+        bits.forEach((b) => {
+          b.x += (b.vx + Math.sin(b.ph + t / 320) * 0.12) * k;
+          b.y += b.vy * k;
+          ctx.fillStyle = b.c;
+          ctx.fillRect(Math.round(b.x), Math.round(b.y), b.s, b.s);
+        });
+        bursts.forEach((br) => {
+          if (t < br.at) return;
+          if (!br.parts) {
+            br.parts = Array.from({ length: 26 }, (_, i) => {
+              const a = (i / 26) * Math.PI * 2;
+              const v = 0.55 + Math.random() * 0.35;
+              return { x: br.x, y: br.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v };
+            });
+          }
+          const life = (t - br.at) / 1100;
+          if (life >= 1) return;
+          const alpha = ctx.globalAlpha;
+          ctx.globalAlpha = alpha * (life < 0.55 ? 1 : life < 0.8 ? 0.6 : 0.3);
+          ctx.fillStyle = life < 0.15 ? '#FFFFFF' : br.c;
+          br.parts.forEach((p) => {
+            p.x += p.vx * k;
+            p.y += p.vy * k;
+            p.vy += 0.012 * k;
+            ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
+          });
+          ctx.globalAlpha = alpha;
         });
         if (t < total) {
           this.raf = requestAnimationFrame(frame);
@@ -951,19 +1110,21 @@
   };
 
   const counters = new WeakMap();
-  function animateNumber(node, from, to, ms) {
+  /** Count a number up; `decimals` (0 or 1) formats yard values like "12.9". */
+  function animateNumber(node, from, to, ms, decimals) {
+    const fmt = decimals ? fmtYards : (v) => String(Math.round(v));
     const prev = counters.get(node);
     if (prev) cancelAnimationFrame(prev);
-    if (from === to || prefersReducedMotion()) { node.textContent = String(to); counters.delete(node); return; }
+    if (from === to || prefersReducedMotion()) { node.textContent = fmt(to); counters.delete(node); return; }
     const duration = ms || 900;
     const t0 = performance.now();
     const step = (now) => {
       const p = Math.min(1, (now - t0) / duration);
       const e = 1 - Math.pow(1 - p, 3);
-      node.textContent = String(Math.round(from + (to - from) * e));
+      node.textContent = fmt(from + (to - from) * e);
       if (p < 1) counters.set(node, requestAnimationFrame(step)); else counters.delete(node);
     };
-    node.textContent = String(from);
+    node.textContent = fmt(from);
     counters.set(node, requestAnimationFrame(step));
   }
 
@@ -985,6 +1146,8 @@
   function touchdownCelebration() {
     flashLights();
     Confetti.run(4200);
+    document.body.classList.add('td-party');
+    setTimeout(() => document.body.classList.remove('td-party'), 4200);
     Sound.play('touchdown');
     announce('Touchdown!');
   }
@@ -1005,11 +1168,10 @@
   const state = {
     phase: 'HOME', mode: null, dateKey: null, questions: [], round: 0, plays: [], score: 0,
     attempts: 0, deadline: 0, startedAt: 0, revealAt: 0, lastSubmitAt: 0,
-    skipArmed: false, skipTimer: 0, warned: {}, lastTick: null, lastSummary: null
+    skipArmed: false, skipTimer: 0, warned: {}, lastTick: null, lastSummary: null, typo: null
   };
   const dom = {};
   let gameField = null;
-  let resultsField = null;
 
   function setPhase(next) {
     if (next === state.phase) return next === 'HOME';
@@ -1078,16 +1240,16 @@
      9. SCREEN RENDERING
      ====================================================================== */
   function cacheDom() {
-    ['topGame', 'topPlay', 'topMode', 'topScoreWrap', 'topScore', 'soundBtn', 'helpBtn', 'brandBtn',
+    ['topGame', 'topPlay', 'topMode', 'topScoreWrap', 'topScore', 'hudYards', 'hudPips', 'soundBtn', 'helpBtn', 'brandBtn',
       'screen-home', 'screen-game', 'screen-results', 'kickoffBtn', 'kickoffSub', 'dailyBtn', 'unlimitedBtn', 'howBtn',
-      'resumeBox', 'dailyNote', 'statHigh', 'statDaily', 'statGames', 'statTier', 'storageNote',
-      'qcard', 'qCategory', 'qCount', 'timer', 'timerProg', 'timerNum', 'timerLabel', 'qPrompt', 'qScope',
-      'answerForm', 'inputWrap', 'answerInput', 'submitBtn', 'feedback', 'skipBtn',
-      'reveal', 'rvStatus', 'rvAnswer', 'rvTier', 'rvPoints', 'rvFlavor', 'rvNote', 'rvMore', 'nextBtn',
-      'gameField', 'resField', 'resHero', 'resMode', 'resScore', 'resRank', 'resMsg', 'resBadge', 'resBest', 'resPlays',
-      'replayBtn', 'shareBtn', 'resHomeBtn', 'resNext',
+      'resumeBox', 'homeMeta', 'homeRunner', 'dailyNote', 'statHigh', 'statDaily', 'statGames', 'statTier', 'storageNote',
+      'qcard', 'qCategory', 'qCount', 'snapCap', 'snapNum', 'timer', 'timerDial', 'timerNum', 'clockFill', 'qPrompt', 'qScope',
+      'answerForm', 'typoChip', 'typoFrom', 'typoTo', 'inputWrap', 'answerInput', 'submitBtn', 'feedback', 'skipBtn',
+      'reveal', 'rvStatus', 'rvMascot', 'rvAnswer', 'rvTier', 'rvPoints', 'rvFlavor', 'rvNote', 'rvMore', 'nextBtn',
+      'gameField', 'resHero', 'resMode', 'resScore', 'resYard', 'resRank', 'resMsg', 'resBadge', 'resLog', 'resLegend', 'resPlays',
+      'copyBtn', 'replayBtn', 'shareBtn', 'resHomeBtn', 'resHowBtn', 'resNext',
       'howDialog', 'tierTable', 'confirmDialog', 'confirmTitle', 'confirmText', 'confirmOk', 'confirmCancel',
-      'shareDialog', 'shareText', 'shareCopy', 'kickoffFx']
+      'shareDialog', 'shareText', 'shareCopy', 'kickoffFx', 'koKicker', 'koBall', 'flashes']
       .forEach((id) => { dom[id.replace(/-([a-z])/g, (m, c) => c.toUpperCase())] = document.getElementById(id); });
   }
   const setBtnLabel = (btn, text) => { const span = btn.querySelector('span'); if (span) span.textContent = text; };
@@ -1103,6 +1265,7 @@
     dom.topGame.hidden = name !== 'game';
     dom.topScoreWrap.hidden = name !== 'game';
     if (name === 'home') {
+      document.body.dataset.zone = 'home';
       let lastKey = utcDateKey();
       startTicker(() => {
         if (utcDateKey() !== lastKey) { lastKey = utcDateKey(); renderHome(); }
@@ -1136,15 +1299,17 @@
     dom.statDaily.innerHTML = doneToday ? `${rec.score}<span class="small"> / 700</span>` :
       (pDaily ? '<span class="small">In progress</span>' : '<span class="small">Not played</span>');
     dom.statTier.innerHTML = stats.bestTier && TIERS[stats.bestTier] ?
-      `<span class="mini-tier" data-tier="${stats.bestTier}"><span aria-hidden="true">${TIERS[stats.bestTier].glyph}</span> ${escapeHTML(TIERS[stats.bestTier].label)}</span>` :
+      `<span class="mini-tier" data-tier="${stats.bestTier}">${SPR.svg(SPR.TIER_MASCOT[stats.bestTier])}${escapeHTML(TIERS[stats.bestTier].label)}</span>` :
       '<span class="small">None yet</span>';
+    // No streak data is stored, so the meta line is just today's (UTC) date.
+    dom.homeMeta.textContent = formatDateKey(utcDateKey());
     const rows = [];
     [pDaily, pUnl].forEach((p) => {
       if (!p) return;
       const label = p.mode === 'daily' ? "Today's Daily Challenge" : 'Your Unlimited drive';
       rows.push(`<div class="resume-row"><p>${label} is in progress<span>Play ${p.round + 1} of ${CONFIG.ROUNDS}, ${totalScore(p.plays)} points so far</span></p>` +
-        `<button type="button" class="btn btn-primary" data-action="resume" data-mode="${p.mode}"><span>Resume</span></button>` +
-        `<button type="button" class="btn btn-ghost" data-action="abandon" data-mode="${p.mode}"><span>${p.mode === 'daily' ? 'Forfeit' : 'Abandon'}</span></button></div>`);
+        `<button type="button" class="btn btn-primary btn-sm" data-action="resume" data-mode="${p.mode}"><span>Resume</span></button>` +
+        `<button type="button" class="btn btn-ghost btn-sm" data-action="abandon" data-mode="${p.mode}"><span>${p.mode === 'daily' ? 'Forfeit' : 'Abandon'}</span></button></div>`);
     });
     dom.resumeBox.innerHTML = rows.join('');
     dom.resumeBox.hidden = rows.length === 0;
@@ -1175,7 +1340,19 @@
 
   function renderTopbar() {
     dom.topPlay.textContent = `Play ${state.round + 1} of ${CONFIG.ROUNDS}`;
-    dom.topMode.textContent = state.mode === 'daily' ? 'Daily Challenge' : 'Unlimited';
+    dom.topMode.textContent = state.mode === 'daily' ? 'Daily' : 'Unlimited';
+  }
+
+  /* Autocorrect confirm: a typo match is shown as a chip and needs a second submit. */
+  function showTypo(input, canonical) {
+    state.typo = { input, canonical };
+    dom.typoFrom.textContent = `“${input}”`;
+    dom.typoTo.textContent = `“${canonical}”`;
+    dom.typoChip.hidden = false;
+  }
+  function clearTypo() {
+    state.typo = null;
+    dom.typoChip.hidden = true;
   }
 
   function setFeedback(text, tone, note) {
@@ -1193,11 +1370,11 @@
   function setAnswerEnabled(enabled) {
     if (enabled) {
       dom.answerInput.removeAttribute('aria-disabled');
-      dom.answerInput.placeholder = 'Type your answer';
+      dom.answerInput.placeholder = 'type one answer…';
       dom.submitBtn.removeAttribute('aria-disabled');
     } else {
       dom.answerInput.setAttribute('aria-disabled', 'true');
-      dom.answerInput.placeholder = 'Read the play…';
+      dom.answerInput.placeholder = 'read the play…';
       dom.submitBtn.setAttribute('aria-disabled', 'true');
     }
     dom.skipBtn.disabled = !enabled;
@@ -1214,6 +1391,7 @@
     dom.answerInput.value = '';
     setFeedback('', null);
     dom.inputWrap.classList.remove('ok', 'bad', 'shake');
+    clearTypo();
     resetSkip();
     dom.qcard.classList.remove('enter');
     void dom.qcard.offsetWidth;
@@ -1221,25 +1399,42 @@
     renderTopbar();
   }
 
-  const RING = 2 * Math.PI * 34;
+  // Pixel dial: 24 square segments around the clock face, lit clockwise from the top.
+  const DIAL_SEGS = 24;
+  let dialSegs = [];
+  let dialLit = -1;
+  function buildDial() {
+    let out = '';
+    for (let i = 0; i < DIAL_SEGS; i++) {
+      const a = ((i / DIAL_SEGS) * 360 - 90) * (Math.PI / 180);
+      out += `<rect class="seg" x="${Math.round(15 + Math.cos(a) * 13)}" y="${Math.round(15 + Math.sin(a) * 13)}" width="2" height="2"/>`;
+    }
+    dom.timerDial.innerHTML = out;
+    dialSegs = Array.from(dom.timerDial.children);
+  }
+
   function renderTimer(mode, leftMs) {
     const total = mode === 'snap' ? CONFIG.PREVIEW_MS : CONFIG.ANSWER_MS;
     const secs = Math.max(0, Math.ceil(leftMs / 1000));
     const frac = Math.max(0, Math.min(1, leftMs / total));
-    dom.timerProg.style.strokeDashoffset = String(RING * (1 - frac));
+    dom.clockFill.style.transform = `scaleX(${frac.toFixed(4)})`;
+    const lit = Math.ceil(frac * DIAL_SEGS);
+    if (lit !== dialLit) {
+      dialLit = lit;
+      dialSegs.forEach((seg, i) => seg.classList.toggle('on', i < lit));
+    }
     let st = 'go';
-    let label = 'Sec';
-    if (mode === 'off') { st = 'off'; label = 'Final'; }
-    else if (mode === 'snap') { st = 'snap'; label = 'Snap'; }
-    else if (secs <= CONFIG.DANGER_SECONDS) { st = 'danger'; label = 'Final'; }
-    else if (secs <= CONFIG.WARN_SECONDS) { st = 'warn'; label = 'Hurry'; }
-    if (dom.timer.dataset.state !== st) dom.timer.dataset.state = st;
+    if (mode === 'off') st = 'off';
+    else if (mode === 'snap') st = 'snap';
+    else if (secs <= CONFIG.DANGER_SECONDS) st = 'danger';
+    else if (secs <= CONFIG.WARN_SECONDS) st = 'warn';
+    if (dom.timer.dataset.state !== st) { dom.timer.dataset.state = st; dom.answerForm.dataset.clock = st; }
     const text = String(secs);
     if (dom.timerNum.textContent !== text) {
       dom.timerNum.textContent = text;
       dom.timer.setAttribute('aria-label', mode === 'snap' ? `Snap count: ${text}` : `Play clock: ${text} seconds left`);
     }
-    if (dom.timerLabel.textContent !== label) dom.timerLabel.textContent = label;
+    if (mode === 'snap' && dom.snapNum.textContent !== text) dom.snapNum.textContent = text;
   }
 
   function suggestionsFor(q, excludeCanonical) {
@@ -1261,19 +1456,13 @@
     dom.reveal.hidden = false;
     dom.reveal.classList.toggle('is-miss', !scored);
     dom.reveal.dataset.tier = tierKey;
-    const burst = dom.reveal.querySelector('.burst');
-    burst.style.animation = 'none';
-    void burst.offsetWidth;
-    burst.style.animation = '';
 
     dom.rvStatus.textContent = scored ? 'Accepted' : (play.status === 'timeout' ? "Time's up" : play.status === 'skipped' ? 'Play skipped' : 'No gain');
+    dom.rvMascot.innerHTML = SPR.svg(SPR.TIER_MASCOT[tierKey]);
     dom.rvAnswer.textContent = scored ? play.canonical : (play.status === 'skipped' ? 'Punt' : 'Delay of game');
     dom.rvTier.dataset.tier = tierKey;
-    dom.rvTier.innerHTML = scored ?
-      `<span class="glyph" aria-hidden="true">${TIERS[play.rarity].glyph}</span><span>${escapeHTML(TIERS[play.rarity].label)}</span>` :
-      '<span class="glyph" aria-hidden="true">✕</span><span>No gain</span>';
-    dom.rvPoints.textContent = `+${play.points} ${play.points === 1 ? 'point' : 'points'}`;
-    if (animate) { dom.rvPoints.classList.remove('pop'); void dom.rvPoints.offsetWidth; dom.rvPoints.classList.add('pop'); }
+    dom.rvTier.textContent = scored ? TIERS[play.rarity].label : 'No gain';
+    dom.rvPoints.innerHTML = `<b>+${play.points} PTS</b> · ${scored ? `+${fmtYards(yardsFor(play.points))} YDS` : 'NO GAIN'}`;
     dom.rvFlavor.textContent = pick(FLAVOR[scored ? play.rarity : play.status] || FLAVOR.timeout);
 
     let note = '';
@@ -1287,10 +1476,11 @@
     dom.rvMore.innerHTML = `<h3>${scored ? 'Other deep cuts' : 'Answers that would have worked'} (${q.answers.length} accepted answers in all)</h3>` +
       `<ul>${others.map((a) => `<li data-tier="${a.rarity}">${escapeHTML(a.canonical)} <small>${escapeHTML(TIERS[a.rarity].label)}</small></li>`).join('')}</ul>`;
     dom.rvMore.hidden = others.length === 0;
-    setBtnLabel(dom.nextBtn, state.round >= CONFIG.ROUNDS - 1 ? 'See Final Results' : 'Next Play');
+    setBtnLabel(dom.nextBtn, state.round >= CONFIG.ROUNDS - 1 ? 'Final Whistle ▶' : 'Next Play ▶');
 
     animateNumber(dom.topScore, animate ? prevScore : state.score, state.score);
-    gameField.render({ plays: state.plays, current: -1, animate, live: false, newIndex: animate ? state.round : -1 });
+    const drawn = gameField.render({ plays: state.plays, current: -1, animate, live: false, newIndex: animate ? state.round : -1 });
+    const arrive = Math.max(300, drawn.arriveMs || 0); // celebrate when the ball carrier gets there
 
     const zone = zoneFor(fieldProgress(state.score));
     const summaryLine = scored ?
@@ -1300,7 +1490,7 @@
 
     if (animate) {
       if (scored) {
-        if (play.rarity === 'gronkillion') { Sound.play('gronk'); flashLights(); }
+        if (play.rarity === 'gronkillion') { Sound.play('gronk'); Delays.add(flashLights, arrive); }
         else if (play.rarity === 'hall_of_famer' || play.rarity === 'all_pro') Sound.play('rare');
         else Sound.play('correct');
       } else {
@@ -1308,8 +1498,8 @@
       }
       const before = fieldProgress(prevScore);
       const after = fieldProgress(state.score);
-      if (after >= 100 && before < 100) Delays.add(touchdownCelebration, 900);
-      else if (after >= 80 && before < 80) Delays.add(flashLights, 900);
+      if (after >= 100 && before < 100) Delays.add(touchdownCelebration, arrive);
+      else if (after >= 80 && before < 80) Delays.add(flashLights, arrive);
     }
     Delays.add(() => {
       if (state.phase === 'REVEAL') {
@@ -1319,22 +1509,54 @@
     }, animate ? CONFIG.NEXT_GUARD_MS : 0);
   }
 
+  /** Drive log: one stem per play, height = yards gained, topped with the tier mascot. */
+  function driveLogMarkup(plays, grow) {
+    const MAX = 16; // yards; a 100-point play gains 14.3
+    const ticks = [0, 5, 10, 15];
+    const cols = [];
+    const spoken = [];
+    for (let i = 0; i < CONFIG.ROUNDS; i++) {
+      const p = plays[i];
+      if (p && p.points > 0 && TIERS[p.rarity]) {
+        const yd = yardsFor(p.points);
+        cols.push(`<div class="log-col" data-tier="${p.rarity}"><span class="log-bar" style="--h:${((yd / MAX) * 100).toFixed(2)};--i:${i}">${SPR.svg(SPR.TIER_MASCOT[p.rarity])}</span></div>`);
+        spoken.push(`play ${i + 1}, ${fmtYards(yd)} yards, ${TIERS[p.rarity].label}`);
+      } else {
+        cols.push('<div class="log-col"><span class="log-miss">✕</span></div>');
+        spoken.push(`play ${i + 1}, no gain`);
+      }
+    }
+    dom.resLog.setAttribute('role', 'img');
+    dom.resLog.setAttribute('aria-label', `Drive log: ${spoken.join('; ')}.`);
+    return `<div class="log-y">${ticks.map((t) => `<span style="bottom:${(t / MAX) * 100}%">${t}</span>`).join('')}</div>` +
+      `<div class="log-plot${grow ? ' grow' : ''}">${ticks.slice(1).map((t) => `<span class="log-grid" style="bottom:${(t / MAX) * 100}%"></span>`).join('')}` +
+      `<div class="log-cols">${cols.join('')}</div></div>` +
+      `<div class="log-x">${Array.from({ length: CONFIG.ROUNDS }, (_, i) => `<span>${i + 1}</span>`).join('')}</div>`;
+  }
+
+  function legendMarkup(rank) {
+    return RANKS.map((r, i) => {
+      const hi = RANKS[i + 1] ? RANKS[i + 1].min - 1 : CONFIG.MAX_SCORE;
+      const you = r.key === rank.key;
+      return `<tr${you ? ' class="is-you" aria-current="true"' : ''}><td class="lg-range">${r.min}–${hi}</td>` +
+        `<td class="lg-title">${escapeHTML(r.label)}</td><td class="lg-msg">${escapeHTML(r.msg)}</td></tr>`;
+    }).join('');
+  }
+
   function renderResults(summary, opts) {
     const o = Object.assign({ newHigh: false, viewOnly: false }, opts);
     const rank = rankFor(summary.score);
+    const progress = fieldProgress(summary.score);
     state.lastSummary = summary;
     dom.resHero.dataset.rank = rank.key;
     dom.resMode.textContent = summary.mode === 'daily' ?
-      `Daily Challenge, ${formatDateKey(summary.dateKey)}${summary.forfeited ? ' (forfeited)' : ''}` : 'Unlimited Mode';
+      `Daily · ${formatDateKey(summary.dateKey)}${summary.forfeited ? ' (forfeited)' : ''}` : 'Unlimited';
+    dom.resYard.textContent = yardMarker(progress);
     dom.resRank.textContent = rank.label;
     dom.resMsg.textContent = rank.msg;
     dom.resBadge.hidden = !o.newHigh;
-
-    const best = summary.plays.reduce((b, p) => (p && p.points > 0 && TIERS[p.rarity] && p.points > (b ? b.points : 0) ? p : b), null);
-    dom.resBest.dataset.tier = best ? best.rarity : 'miss';
-    dom.resBest.innerHTML = best ?
-      `<h3>Best answer</h3><p>${escapeHTML(best.canonical)} <small>${escapeHTML(TIERS[best.rarity].label)}, +${best.points}</small></p>` :
-      '<h3>Best answer</h3><p>No points on this drive</p>';
+    dom.resLog.innerHTML = driveLogMarkup(summary.plays, !o.viewOnly);
+    dom.resLegend.querySelector('tbody').innerHTML = legendMarkup(rank);
 
     dom.resPlays.innerHTML = summary.plays.map((p, i) => {
       const q = QUESTION_BY_ID.get(p ? p.qid : summary.qids[i]);
@@ -1343,26 +1565,23 @@
       const answer = scored ?
         `<b>${escapeHTML(p.canonical)}</b> <span class="rp-tier">${escapeHTML(TIERS[p.rarity].label)}</span>` :
         (p && p.status === 'skipped' ? 'Skipped' : p && p.status === 'forfeit' ? 'Forfeited' : 'Timed out');
-      return `<li class="res-play" data-tier="${tier}"><span class="rp-num" aria-hidden="true">${i + 1}</span>` +
+      return `<li class="res-play notch" data-tier="${tier}"><span class="rp-num" aria-hidden="true">${i + 1}</span>` +
         `<p class="rp-q"><span class="rp-cat">${escapeHTML(q ? q.category : '')}</span>${escapeHTML(q ? q.prompt : 'Retired question')}</p>` +
         `<p class="rp-a"><span class="sr-only">Play ${i + 1}. </span>Your answer: ${answer}</p>` +
         `<span class="rp-pts">+${p ? p.points : 0}</span></li>`;
     }).join('');
 
-    setBtnLabel(dom.replayBtn, summary.mode === 'daily' ? (loadProgress('unlimited') ? 'Resume Unlimited' : 'Play Unlimited') : 'Play Again');
+    setBtnLabel(dom.replayBtn, summary.mode === 'daily' ? (loadProgress('unlimited') ? 'Resume Unlimited ▶' : 'Play Unlimited ▶') : 'Play Again ▶');
     showScreen('results');
+    document.body.dataset.zone = zoneFor(progress).key;
     animateNumber(dom.resScore, o.viewOnly ? summary.score : 0, summary.score, 1200);
-    resultsField.render({ plays: [], current: -1, animate: false });
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      resultsField.render({ plays: summary.plays, current: -1, animate: !o.viewOnly, newIndex: -1 });
-    }));
     try { dom.resRank.focus({ preventScroll: true }); } catch (err) { dom.resRank.focus(); }
   }
 
   function buildTierTable() {
     dom.tierTable.querySelector('tbody').innerHTML = TIER_ORDER.map((k) => {
       const t = TIERS[k];
-      return `<tr data-tier="${k}"><td aria-hidden="true">${t.glyph}</td><td><span class="tt-name">${escapeHTML(t.label)}</span><br><span class="tt-desc">${escapeHTML(t.desc)}</span></td><td class="tt-pts">${t.points} pts</td></tr>`;
+      return `<tr data-tier="${k}"><td>${SPR.svg(SPR.TIER_MASCOT[k])}</td><td><span class="tt-name">${escapeHTML(t.label)}</span><br><span class="tt-desc">${escapeHTML(t.desc)}</span></td><td class="tt-pts">${t.points} pts</td></tr>`;
     }).join('');
   }
 
@@ -1477,9 +1696,23 @@
     const raw = dom.answerInput.value;
     const res = validate(q, raw);
     if (res.kind === 'accepted') {
+      // A typo correction is never locked in on the first submit: show it, and let a
+      // second submit of the same text confirm it. Exact/alias/surname matches go straight through.
+      const typed = raw.trim();
+      const confirmed = state.typo && state.typo.input === typed && state.typo.canonical === res.answer.canonical;
+      if (res.via === 'typo' && !confirmed) {
+        showTypo(typed, res.answer.canonical);
+        setFeedback('', null);
+        dom.inputWrap.classList.remove('shake', 'bad');
+        Sound.play('nudge');
+        announce(`Did you mean ${res.answer.canonical}? Submit again to confirm, or edit your answer.`);
+        focusAnswer();
+        return;
+      }
       finishRound({ status: 'accepted', input: raw, answer: res.answer, via: res.via });
       return;
     }
+    clearTypo();
     const fb = feedbackFor(res, raw, q);
     setFeedback(fb.text, fb.tone, fb.note);
     if (res.kind === 'empty') { focusAnswer(); return; }
@@ -1515,6 +1748,7 @@
     if (!setPhase('REVEAL')) return;
     Timer.stop();
     resetSkip();
+    clearTypo();
     const q = currentQuestion();
     const prevScore = state.score;
     const a = result.answer || null;
@@ -1608,6 +1842,8 @@
     Timer.stop();
     Delays.clear();
     resetSkip();
+    clearTypo();
+    document.body.classList.remove('td-party');
     dom.kickoffFx.hidden = true;
     dom.kickoffFx.classList.remove('run');
     setPhase('HOME');
@@ -1723,6 +1959,13 @@
     dom.shareText.select();
   }
 
+  async function copyResults() {
+    const summary = state.lastSummary;
+    if (!summary) return;
+    const text = shareTextFor(summary);
+    if (await copyText(text)) toast('Result copied to clipboard'); else openShareDialog(text);
+  }
+
   async function shareResults() {
     const summary = state.lastSummary;
     if (!summary) return;
@@ -1734,13 +1977,12 @@
         toast((await copying) ? 'Shared, and copied to your clipboard' : 'Shared!');
         return;
       } catch (err) {
-        if (await copying) { toast('Results copied to clipboard'); return; }
         if (err && err.name === 'AbortError') return;
-        openShareDialog(text);
-        return;
       }
     }
-    if (await copying) toast('Results copied to clipboard'); else openShareDialog(text);
+    // No share sheet: show the text so it can be pasted anywhere (it's on the clipboard too when allowed).
+    await copying;
+    openShareDialog(text);
   }
 
   /* ======================================================================
@@ -1776,14 +2018,17 @@
     dom.answerInput.addEventListener('input', () => {
       if (state.phase !== 'ANSWERING') { dom.answerInput.value = ''; return; }
       dom.inputWrap.classList.remove('bad');
+      if (state.typo && dom.answerInput.value.trim() !== state.typo.input) clearTypo(); // editing clears the chip
     });
     dom.submitBtn.addEventListener('click', (e) => { if (dom.submitBtn.getAttribute('aria-disabled') === 'true') { e.preventDefault(); setFeedback('Hold on. Answering opens after the snap.', 'info'); } });
     dom.skipBtn.addEventListener('click', onSkip);
     dom.nextBtn.addEventListener('click', onNext);
 
     dom.replayBtn.addEventListener('click', () => { Sound.play('click'); startNewGame('unlimited'); });
+    dom.copyBtn.addEventListener('click', copyResults);
     dom.shareBtn.addEventListener('click', shareResults);
     dom.resHomeBtn.addEventListener('click', goHome);
+    dom.resHowBtn.addEventListener('click', () => openDialog(dom.howDialog));
     dom.shareCopy.addEventListener('click', async () => {
       if (await copyText(dom.shareText.value)) toast('Copied');
       else { dom.shareText.focus(); dom.shareText.select(); toast('Press Ctrl+C (or ⌘C) to copy'); }
@@ -1794,10 +2039,29 @@
     window.addEventListener('pagehide', saveProgress);
   }
 
+  /** Inject sprites into the static markup: wordmarks, stadium, home runner, kickoff scene. */
+  function decorate() {
+    SPR.install();
+    document.querySelectorAll('[data-wordmark]').forEach((el) => { el.innerHTML = SPR.wordmark(el.dataset.wordmark === 'big'); });
+    document.querySelectorAll('[data-sprite]').forEach((el) => { el.innerHTML = SPR.svg(el.dataset.sprite); });
+    const root = document.documentElement.style;
+    [['--stars', SPR.stars()], ['--crowd-dim', SPR.crowd('dim')], ['--crowd-hot', SPR.crowd('hot')], ['--crowd-dense', SPR.crowd('dense')]]
+      .forEach(([name, url]) => { if (url) root.setProperty(name, `url("${url}")`); });
+    let flashes = '';
+    for (let i = 0; i < 16; i++) {
+      flashes += `<span style="left:${(4 + ((i * 37) % 92)).toFixed(0)}%;top:${10 + ((i * 23) % 70)}%;--d:${(1.6 + ((i * 7) % 10) / 6).toFixed(2)}s;--delay:${(-((i * 13) % 20) / 10).toFixed(1)}s"></span>`;
+    }
+    dom.flashes.innerHTML = flashes;
+    dom.homeRunner.innerHTML = SPR.runner();
+    dom.koKicker.innerHTML = `<svg class="spr" viewBox="0 0 16 20" shape-rendering="crispEdges" aria-hidden="true" focusable="false">${SPR.frames(['kick-1', 'kick-2'])}</svg>`;
+    dom.koBall.innerHTML = `<svg class="spr spin" viewBox="0 0 8 6" shape-rendering="crispEdges" aria-hidden="true" focusable="false">${SPR.frames(['ball-1', 'ball-2', 'ball-3'])}</svg>`;
+  }
+
   function init() {
     cacheDom();
-    gameField = createField(dom.gameField, 'gf');
-    resultsField = createField(dom.resField, 'rf');
+    decorate();
+    buildDial();
+    gameField = createField(dom.gameField, { pips: dom.hudPips, yards: dom.hudYards });
     buildTierTable();
     setSound(Store.get('settings', { sound: false }, validSettings).sound, false);
     bindEvents();
